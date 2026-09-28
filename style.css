@@ -74,7 +74,8 @@ a {
 
 .tombol.kecil { 
     padding: 7px 15px; 
-    font-size: 14px; }
+    font-size: 14px;
+    color:black }
 
 .tombol.penuh { 
     width: 100%; }
