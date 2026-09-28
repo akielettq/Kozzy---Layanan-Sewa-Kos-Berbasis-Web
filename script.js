@@ -428,7 +428,7 @@ function siapkanBooking() {
   // aman → tampilkan form
   kamarDipilih = kode;
   document.getElementById("infoKamarBooking").innerHTML =
-    "<img src='kamar" + k.kode + ".jpg'>" +
+    "<img src='kamar/" + k.kode + ".jpg' alt='Kamar " + k.kode + "'>" +
     "<div><b style='font-size:18px'>Kamar " + k.kode + "</b>" +
     "<div class='ket'>Kos " + (k.tipe == "putra" ? "Putra" : "Putri") + " · " + k.fasilitas + "</div>" +
     "<div class='harga'>" + rupiah(k.harga) + " <small>/bulan</small></div></div>";
