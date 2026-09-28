@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Kozzy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-dalam">
+    <a class="logo" href="index.html">
+    <img src="logo kos.png" alt="Logo">
+      Kozzy<b>.</b>
+    </a>
+    <nav class="menu">
+      <a href="index.html">Beranda</a>
+      <a href="kamar.html">Kamar</a>
+      <a href="sewaku.html">Sewaku</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+    <div class="nav-user" id="navUser"></div>
+  </div>
+</header>
+
+<section class="wadah hal-isi" id="isiAdmin"></section>
+
+<!-- modal alasan penolakan -->
+<div class="modal" id="modalTolak" onclick="if (event.target == this) tutupModal('modalTolak')">
+  <div class="modal-kotak">
+    <button class="tutup" onclick="tutupModal('modalTolak')">×</button>
+    <h3>Tolak pengajuan ini?</h3>
+    <p class="sub-tengah">Alasan akan dilihat oleh pencari kos.</p>
+    <textarea id="tolakAlasan" class="masukan" rows="3" placeholder="cth. Bukti pembayaran tidak terbaca…"></textarea>
+    <br>
+    <button class="tombol merah" onclick="konfirmasiTolak()">Ya, Tolak</button>
+    <button class="tombol" onclick="tutupModal('modalTolak')">Batal</button>
+  </div>
+</div>
+
+<!-- modal lihat bukti bayar -->
+<div class="modal" id="modalBukti" onclick="if (event.target == this) tutupModal('modalBukti')">
+  <div class="modal-kotak tengah">
+    <button class="tutup" onclick="tutupModal('modalBukti')">×</button>
+    <h3>Bukti Pembayaran</h3>
+    <img id="buktiImg" style="width:100%;border:1.5px solid #221F19;border-radius:12px" alt="Bukti bayar">
+  </div>
+</div>
+
+<footer class="footer">
+  <div><b style="font-size:26px">Kozzy<b>.</b></b><br><small>Kos bulanan · Putra &amp; Putri · Pekanbaru</small></div>
+  <div class="ket-footer"><small>0896-6132-7050 (WA) · kozzy@gmail.com<br>Jl. Bangau Perkasa, Pekanbaru</small></div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

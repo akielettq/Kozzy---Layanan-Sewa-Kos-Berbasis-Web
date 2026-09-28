@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masuk — Kozzy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-dalam">
+    <a class="logo" href="index.html">
+    <img src="logo kos.png" alt="Logo">
+      Kozzy<b>.</b>
+    </a>
+    <nav class="menu">
+      <a href="index.html">Beranda</a>
+      <a href="kamar.html">Kamar</a>
+      <a href="sewaku.html">Sewaku</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+    <div class="nav-user" id="navUser"></div>
+  </div>
+</header>
+
+<section class="wadah hal-isi" style="max-width:480px">
+  <h3 id="judulAuth">Masuk ke Kozzy</h3>
+  <p class="sub-tengah" style="text-align:left">Masuk dulu untuk bisa booking kamar.</p>
+
+  <div class="auth-tab">
+    <button type="button" id="tabMasuk" class="aktif" onclick="gantiTab('masuk')">Masuk</button>
+    <button type="button" id="tabDaftar" onclick="gantiTab('daftar')">Daftar</button>
+  </div>
+
+  <!-- form masuk -->
+  <form id="formMasuk" onsubmit="return prosesLogin()">
+    <label>Email</label>
+    <input id="loginEmail" class="masukan" placeholder="nama@email.com" oninput="document.getElementById('loginSalah').innerText=''">
+    <label>Password</label>
+    <input id="loginPass" class="masukan" type="password" placeholder="••••••">
+    <p class="salah" id="loginSalah"></p>
+    <button type="submit" class="tombol hijau penuh">Masuk →</button>
+  </form>
+
+  <!-- form daftar -->
+  <form id="formDaftar" style="display:none" onsubmit="return prosesDaftar()">
+    <label>Nama lengkap</label>
+    <input id="daftarNama" class="masukan" placeholder="cth. Rani Putri">
+    <label>Email</label>
+    <input id="daftarEmail" class="masukan" placeholder="nama@email.com">
+    <label>No. WhatsApp</label>
+    <input id="daftarTelp" class="masukan" placeholder="08xxxxxxxxxx">
+    <label>Password (minimal 6 karakter)</label>
+    <input id="daftarSandi" class="masukan" type="password" placeholder="••••••">
+    <p class="salah" id="daftarSalah"></p>
+    <button type="submit" class="tombol hijau penuh">Buat Akun →</button>
+    <p class="ket-tengah">Akun baru tersimpan di browser (localStorage) — tetap ada walau di-refresh.</p>
+  </form>
+</section>
+
+<footer class="footer">
+  <div><b style="font-size:26px">Kozzy<b>.</b></b><br><small>Kos bulanan · Putra &amp; Putri · Pekanbaru</small></div>
+  <div class="ket-footer"><small>0896-6132-7050 (WA) · kozzy@gmail.com<br>Jl. Bangau Perkasa, Pekanbaru</small></div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
