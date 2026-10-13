@@ -302,42 +302,35 @@ function loginBerhasil(u) {
 }
 
 // ====== 7. HALAMAN KAMAR ======
-// ====== 7. HALAMAN KAMAR ======
 function tampilkanKamar() {
-  var html = "";
-
-  // putaran 0 = kamar yang belum terisi (tampil duluan)
-  // putaran 1 = kamar yang terisi (ditaruh di bawah)
-  for (var putaran = 0; putaran < 2; putaran++) {
-    for (var i = 0; i < kamarList.length; i++) {
-      var k = kamarList[i];
-      var sudahTerisi = (k.status == "terisi");
-
-      if (putaran == 0 && sudahTerisi) continue;   // putaran 0: lewati yang terisi
-      if (putaran == 1 && !sudahTerisi) continue;  // putaran 1: lewati yang belum terisi
-
-      if (filterTipe != "semua" && k.tipe != filterTipe) continue; // kena filter, lewati
-      var info = INFO_STATUS[k.status];
-      html += "<div class='kartu-kamar" + (k.status == "terisi" ? " abu" : "") + "'>" +
-        "<img src='kamar/" + k.kode + ".jpg' alt='Kamar " + k.kode + "'>" +
-        "<div>" +
-          "<div class='kartu-atas'>" +
-            "<h3>" + k.kode + "</h3>" +
-            "<span class='tipe " + (k.tipe == "putra" ? "tipe-putra" : "tipe-putri") + "'>" + k.tipe + "</span>" +
-            "<span class='lencana " + info[0] + "'>" + info[1] + "</span>" +
-          "</div>" +
-          "<p>" + k.deskripsi + "</p>" +
-          "<p class='fasilitas'>" + k.fasilitas + "</p>" +
-          (k.status == "terisi" && k.terisiHingga != null ? "<p class='ket'>terisi s.d. " + formatTanggal(k.terisiHingga) + "</p>" : "") +
+  var htmlAtas = "";   // kamar tersedia / perbaikan -> tampil di atas
+  var htmlBawah = "";  // kamar terisi -> dipindah ke bagian bawah
+  for (var i = 0; i < kamarList.length; i++) {
+    var k = kamarList[i];
+    if (filterTipe != "semua" && k.tipe != filterTipe) continue; // kena filter, lewati
+    var info = INFO_STATUS[k.status];
+    var kartu = "<div class='kartu-kamar" + (k.status == "terisi" ? " abu" : "") + "'>" +
+      "<img src='kamar/" + k.kode + ".jpg' alt='Kamar " + k.kode + "'>" +
+      "<div>" +
+        "<div class='kartu-atas'>" +
+          "<h3>" + k.kode + "</h3>" +
+          "<span class='tipe " + (k.tipe == "putra" ? "tipe-putra" : "tipe-putri") + "'>" + k.tipe + "</span>" +
+          "<span class='lencana " + info[0] + "'>" + info[1] + "</span>" +
         "</div>" +
-        "<div class='kartu-kanan'>" +
-          "<div class='harga'>" + rupiah(k.harga) + " <small>/bulan</small></div>" +
-          "<button class='tombol kecil' onclick=\"bukaDetail('" + k.kode + "')\">Detail</button>" +
-        "</div>" +
-      "</div>";
-    }
+        "<p>" + k.deskripsi + "</p>" +
+        "<p class='fasilitas'>" + k.fasilitas + "</p>" +
+        (k.status == "terisi" && k.terisiHingga != null ? "<p class='ket'>terisi s.d. " + formatTanggal(k.terisiHingga) + "</p>" : "") +
+      "</div>" +
+      "<div class='kartu-kanan'>" +
+        "<div class='harga'>" + rupiah(k.harga) + " <small>/bulan</small></div>" +
+        "<button class='tombol kecil' onclick=\"bukaDetail('" + k.kode + "')\">Detail</button>" +
+      "</div>" +
+    "</div>";
+    // kartu yang sudah jadi dimasukkan ke atas atau bawah, tergantung statusnya
+    if (k.status == "terisi") htmlBawah += kartu;
+    else htmlAtas += kartu;
   }
-
+  var html = htmlAtas + htmlBawah; // yang terisi otomatis paling bawah
   document.getElementById("daftarKamar").innerHTML =
     html == "" ? "<p>Waduh, belum ada kamar di kategori ini.</p>" : html;
 
@@ -707,30 +700,38 @@ function tampilkanAdmin() {
   }
   if (!adaRiwayat) html += "<p class='sub'>Belum ada keputusan.</p>";
 
-    //pengaturan status tiap kamar
+  // pengaturan status tiap kamar
+  // putaran 0 = kamar yang belum terisi, putaran 1 = kamar terisi (jadi paling bawah)
   html += "<h2 class='judul-admin'>Status Kamar</h2>";
-  for (var s = 0; s < kamarList.length; s++) {
-    var k = kamarList[s];
-    var info = INFO_STATUS[k.status];
+  for (var putaran = 0; putaran < 2; putaran++) {
+    for (var s = 0; s < kamarList.length; s++) {
+      var k = kamarList[s];
+      var sedangTerisi = (k.status == "terisi");
+      if (sedangTerisi != (putaran == 1)) continue; // bukan giliran putaran ini, lewati
 
-    // admin cuma boleh ubah Perbaikan -> Tersedia
-    var aksiKamar = "";
-    if (k.status == "pemeliharaan") {
-      aksiKamar = "<button class='tombol kecil hijau' onclick=\"ubahStatusKamar('" + k.kode + "', 'tersedia')\">Tandai Tersedia</button>";
-    } else {
-      aksiKamar = "<span class='lencana " + info[0] + "'>" + info[1] + "</span>";
+      html += "<div class='baris-kamar" + (sedangTerisi ? " abu" : "") + "'><b>" + k.kode + "</b>" +
+        "<span class='tipe " + (k.tipe == "putra" ? "tipe-putra" : "tipe-putri") + "'>" + k.tipe + "</span>" +
+        "<span class='ket'>" + rupiah(k.harga) + "/bln</span>" +
+        (k.terisiHingga != null ? "<span class='ket'>terisi s.d. " + formatTanggal(k.terisiHingga) + "</span>" : "");
+
+      if (sedangTerisi) {
+        // kamar terisi: kotak pilihan abu-abu & dikunci, tidak bisa diubah
+        html += "<select class='masukan' disabled title='Kamar sedang terisi, status tidak bisa diubah'>" +
+          "<option selected>Terisi</option></select></div>";
+      } else {
+        // kamar belum terisi: pilihannya cuma Tersedia atau Perbaikan
+        html += "<select class='masukan' onchange=\"ubahStatusKamar('" + k.kode + "', this.value)\">" +
+          "<option value='tersedia'"     + (k.status == "tersedia"     ? " selected" : "") + ">Tersedia</option>" +
+          "<option value='pemeliharaan'" + (k.status == "pemeliharaan" ? " selected" : "") + ">Perbaikan</option>" +
+          "</select></div>";
+      }
     }
-
-    html += "<div class='baris-kamar'><b>" + k.kode + "</b>" +
-      "<span class='tipe " + (k.tipe == "putra" ? "tipe-putra" : "tipe-putri") + "'>" + k.tipe + "</span>" +
-      "<span class='ket'>" + rupiah(k.harga) + "/bln</span>" +
-      (k.terisiHingga != null ? "<span class='ket'>terisi s.d. " + formatTanggal(k.terisiHingga) + "</span>" : "") +
-      aksiKamar +
-    "</div>";
   }
 
   kotak.innerHTML = html;
 }
+
+// ====== 11. AKSI ADMIN ======
 
 // ====== 11. AKSI ADMIN ======
 function setujui(id) {
@@ -762,18 +763,13 @@ function konfirmasiTolak() {
 }
 function ubahStatusKamar(kode, status) {
   var k = cariKamar(kode);
-
-  // aturan: admin hanya boleh mengubah dari Perbaikan ke Tersedia
-  if (!(k.status == "pemeliharaan" && status == "tersedia")) {
-    toast("Admin hanya bisa mengubah kamar dari Perbaikan ke Tersedia.");
-    return;
-  }
-
-  k.status = "tersedia";
+  // pengaman: kamar terisi tidak boleh diubah manual (status terisi diatur lewat booking)
+  if (k.status == "terisi") { toast("Kamar " + kode + " sedang terisi, statusnya tidak bisa diubah."); return; }
+  k.status = status;
   k.terisiHingga = null;
   simpanData();
-  toast("Kamar " + kode + " sekarang Tersedia.");
-  tampilkanAdmin(); // refresh tampilan supaya tombolnya berubah jadi lencana & hitungan ikut update
+  toast("Kamar " + kode + " sekarang berstatus: " + INFO_STATUS[status][1] + ".");
+  tampilkanAdmin(); // tampilkan ulang biar angka statistik di atas ikut berubah
 }
 function lihatBukti(id) {
   var b = cariBooking(id);

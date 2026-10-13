@@ -973,3 +973,14 @@ h2.judul-admin {
     color: var(--tera);
     margin-left: 2px;
 }
+
+.baris-kamar.abu {
+    background: #E4E2DD;
+    opacity: .7; 
+}
+
+select.masukan:disabled {
+    background: #D6D4CF;
+    color: #6f6c66;
+    cursor: not-allowed; 
+}
