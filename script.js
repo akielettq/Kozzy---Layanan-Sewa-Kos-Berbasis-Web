@@ -260,7 +260,7 @@ function prosesLogin() {
       return false;
     }
   }
-  pesan.innerText = "Email atau password salah (password semua huruf kecil). Atau klik tombol demo di bawah.";
+  pesan.innerText = "Email atau password salah (password semua huruf kecil)";
   return false;
 }
 
@@ -275,7 +275,7 @@ function prosesDaftar() {
   if (nama.length < 3) { pesan.innerText = "Nama minimal 3 karakter."; return false; }
   if (email.indexOf("@") < 1 || email.indexOf(".") < 0) { pesan.innerText = "Format email belum benar."; return false; }
   for (var i = 0; i < pengguna.length; i++) {
-    if (pengguna[i].email == email) { pesan.innerText = "Email sudah terdaftar — coba masuk saja."; return false; }
+    if (pengguna[i].email == email) { pesan.innerText = "Email sudah terdaftar. Coba masuk saja."; return false; }
   }
   if (telp.indexOf("08") != 0 || telp.length < 10) { pesan.innerText = "No. WhatsApp harus diawali 08 dan minimal 10 digit."; return false; }
   if (sandi.length < 6) { pesan.innerText = "Password minimal 6 karakter."; return false; }
@@ -456,7 +456,7 @@ function pilihMetode(nama) {
   metodeDipilih = nama;
   var info = document.getElementById("infoBayar");
   info.style.display = "";
-  info.innerText = "Kamu memilih " + nama + ". Bayar tepat sebesar total tagihan ke nomor di atas, lalu unggah buktinya (opsional di mode demo).";
+  info.innerText = "Kamu memilih " + nama + ". Bayar tepat sebesar total tagihan ke nomor di atas, lalu unggah buktinya.";
 }
 
 function pilihBukti(input) {
