@@ -15,7 +15,6 @@ var kamarDipilih = null;
 var metodeDipilih = null;
 var buktiBayar = null;
 var idDitolak = null;
-var yakinReset = false;
 
 // supaya warna & tulisan status seragam di semua halaman
 var INFO_STATUS = {
@@ -54,18 +53,6 @@ function ambilData() {
       if (pengguna[i].id == idLogin) userLogin = pengguna[i];
     }
   }
-}
-
-// mengembalikan semua data ke kondisi awal (tombol di halaman admin)
-function resetData() {
-  if (!yakinReset) {
-    yakinReset = true;
-    document.getElementById("tombolReset").innerText = "Yakin? Klik sekali lagi";
-    return;
-  }
-  localStorage.removeItem("kozzyData");
-  localStorage.removeItem("kozzyLogin");
-  window.location.href = "index.html";
 }
 
 function isiDataContoh() {
@@ -175,6 +162,21 @@ function cekMasaSewa() {
 function perbaruiNavbar() {
   var kotak = document.getElementById("navUser");
   if (kotak == null) return;
+
+  // Tampilkan menu sesuai peran akun yang sedang login.
+  var menuSewaku = document.querySelector(".menu a[href='sewaku.html']");
+  var menuAdmin = document.querySelector(".menu a[href='admin.html']");
+
+  if (menuSewaku != null) {
+    menuSewaku.style.display =
+      (userLogin != null && userLogin.peran == "admin") ? "none" : "";
+  }
+
+  if (menuAdmin != null) {
+    menuAdmin.style.display =
+      (userLogin == null || userLogin.peran != "admin") ? "none" : "";
+  }
+
   if (userLogin == null) {
     kotak.innerHTML = "<a class='tombol kecil' href='login.html'>Masuk</a>";
   } else {
@@ -727,10 +729,6 @@ function tampilkanAdmin() {
     "</div>";
   }
 
-  // tombol reset (berguna sebelum presentasi)
-  html += "<h2 class='judul-admin'>Lainnya</h2>" +
-    "<button class='tombol kecil' id='tombolReset' onclick='resetData()'>Reset Data Demo</button>" +
-    "<p class='ket'>Mengembalikan semua data ke kondisi awal.</p>";
   kotak.innerHTML = html;
 }
 
@@ -810,6 +808,20 @@ function panelPesan(judul, teks, tombolHtml) {
 
 // ====== 13. JALANKAN SAAT HALAMAN DIBUKA ======
 ambilData();
+// Cegah akun membuka halaman yang bukan untuk perannya.
+  var halamanSekarang = window.location.pathname.split("/").pop();
+
+  if (halamanSekarang == "admin.html" &&
+       (userLogin == null || userLogin.peran != "admin")) {
+  window.location.replace("index.html");
+} else if (
+    userLogin != null &&
+    userLogin.peran == "admin" &&
+    halamanSekarang == "sewaku.html"
+) {
+  window.location.replace("index.html");
+}
+
 perbaruiNavbar();
 tandaiMenu();
 if (document.getElementById("isiProfil") != null) tampilkanProfil();
