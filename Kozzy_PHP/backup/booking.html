@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking — Kozzy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-dalam">
+    <a class="logo" href="index.html">
+      <img src="logo kos.png" alt="Logo">
+      Kozzy<b>.</b>
+    </a>
+    <nav class="menu">
+      <a href="index.html">Beranda</a>
+      <a href="kamar.html">Kamar</a>
+      <a href="sewaku.html">Sewaku</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+    <div class="nav-user" id="navUser"></div>
+  </div>
+</header>
+
+<section class="wadah hal-isi" id="blokBooking">
+  <span class="label-bagian">BOOKING</span>
+  <h1>Kunci kamarmu.</h1>
+  <div id="infoKamarBooking" class="panel ringkasan"></div>
+
+  <div class="panel">
+    <h3>Detail sewa</h3>
+    <label>Tanggal mulai sewa</label>
+    <input type="date" id="fTanggal" class="masukan">
+    <label>Durasi sewa</label>
+    <select id="fDurasi" class="masukan" onchange="hitungTotal()">
+      <option value="1">1 bulan</option>
+      <option value="3">3 bulan</option>
+      <option value="6">6 bulan</option>
+    </select>
+    <div class="total-bar"><span>TOTAL BAYAR</span><b id="totalHarga">—</b></div>
+
+    <h3>Pembayaran</h3>
+    <label class="pilihan"><input type="radio" name="metode" value="Transfer BCA" onchange="pilihMetode(this.value)"> Transfer BCA — VA 8899 0812 1111 2223 (a.n. Kozzy)</label>
+    <label class="pilihan"><input type="radio" name="metode" value="QRIS" onchange="pilihMetode(this.value)"> QRIS — scan dari e-wallet / m-banking apa pun</label>
+    <label class="pilihan"><input type="radio" name="metode" value="E-Wallet" onchange="pilihMetode(this.value)"> E-Wallet — DANA / OVO / GoPay ke 0812-3456-7890</label>
+    <p id="infoBayar" class="info-bayar" style="display:none"></p>
+
+    <label>Unggah bukti pembayaran (opsional di demo)</label>
+    <input type="file" id="fBukti" class="masukan" onchange="pilihBukti(this)">
+    <p id="namaBukti" class="ket"></p>
+
+    <label class="setuju"><input type="checkbox" id="fSetuju"> Satu akun hanya bisa menyewa satu kamar, dan pengajuan saya akan diverifikasi admin dulu.</label>
+    <button class="tombol hijau" onclick="kirimBooking()">Kirim &amp; Minta Verifikasi →</button>
+    <a class="tombol" href="kamar.html">Batal</a>
+  </div>
+</section>
+
+<!-- modal booking sukses -->
+<div class="modal" id="modalSukses" onclick="if (event.target == this) tutupModal('modalSukses')">
+  <div class="modal-kotak tengah">
+    <button class="tutup" onclick="tutupModal('modalSukses')">×</button>
+    <div class="sukses-ikon">✓</div>
+    <h3>Booking terkirim!</h3>
+    <p class="sub-tengah">Pengajuanmu masuk antrean verifikasi admin. Pantau statusnya di menu Sewaku.</p>
+    <div class="kode-booking" id="sKode"></div>
+    <p id="sInfo" class="ket-tengah"></p>
+    <a class="tombol hijau" href="sewaku.html">Lihat Status Saya →</a>
+  </div>
+</div>
+
+<footer class="footer">
+  <div><b style="font-size:26px">Kozzy<b>.</b></b><br><small>Kos bulanan · Putra &amp; Putri · Pekanbaru</small></div>
+  <div class="ket-footer"><small>0896-6132-7050 (WA) · kozzy@gmail.com<br>Jl. Bangau Perkasa, Pekanbaru</small></div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
