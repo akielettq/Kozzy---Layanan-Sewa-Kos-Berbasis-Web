@@ -1,0 +1,226 @@
+{
+  "nextBookingNum": 120,
+  "nextVerifId": 2,
+  "users": [
+    {
+      "idPengguna": 1,
+      "nama": "Admin Kozzy (Akiel)",
+      "email": "admin@kozzy.id",
+      "password": "admin123",
+      "noTelepon": "089661327050",
+      "role": "admin"
+    },
+    {
+      "idPengguna": 2,
+      "nama": "Farah",
+      "email": "farah@kozzy.id",
+      "password": "123456",
+      "noTelepon": "081234567891",
+      "role": "pencari"
+    },
+    {
+      "idPengguna": 3,
+      "nama": "Fildza",
+      "email": "fildza@kozzy.id",
+      "password": "123456",
+      "noTelepon": "081298765432",
+      "role": "pencari"
+    }
+  ],
+  "rooms": [
+    {
+      "kodeKamar": "A-01",
+      "tipe": "putri",
+      "harga": 850000,
+      "status": "tersedia",
+      "terisiHingga": null,
+      "deskripsi": "Kamar tipe Standard Putri dengan sirkulasi udara sejuk.",
+      "fasilitas": [
+        "Kasur Springbed",
+        "Lemari Pakaian",
+        "Meja Belajar",
+        "WiFi High Speed",
+        "Kamar Mandi Dalam"
+      ]
+    },
+    {
+      "kodeKamar": "A-02",
+      "tipe": "putri",
+      "harga": 950000,
+      "status": "tersedia",
+      "terisiHingga": null,
+      "deskripsi": "Kamar Deluxe Putri dengan fasilitas AC hemat listrik.",
+      "fasilitas": [
+        "AC 1/2 PK",
+        "Kasur Springbed",
+        "Lemari Pakaian",
+        "Meja Belajar",
+        "WiFi High Speed",
+        "Kamar Mandi Dalam"
+      ]
+    },
+    {
+      "kodeKamar": "A-03",
+      "tipe": "putri",
+      "harga": 1100000,
+      "status": "terisi",
+      "terisiHingga": "2026-11-26",
+      "deskripsi": "Kamar VIP Putri paling luas dengan water heater dan balkon mini.",
+      "fasilitas": [
+        "AC 1 PK",
+        "Kasur Queen",
+        "Lemari 3 Pintu",
+        "Meja Belajar",
+        "WiFi High Speed",
+        "Kamar Mandi Dalam",
+        "Water Heater"
+      ]
+    },
+    {
+      "kodeKamar": "A-04",
+      "tipe": "putri",
+      "harga": 850000,
+      "status": "pemeliharaan",
+      "terisiHingga": null,
+      "deskripsi": "Sedang dalam perawatan instalasi listrik dan pengecatan ulang.",
+      "fasilitas": [
+        "Kasur Springbed",
+        "Lemari Pakaian",
+        "WiFi High Speed"
+      ]
+    },
+    {
+      "kodeKamar": "B-01",
+      "tipe": "putra",
+      "harga": 850000,
+      "status": "tersedia",
+      "terisiHingga": null,
+      "deskripsi": "Kamar Standard Putra dekat dengan pintu akses utama kos.",
+      "fasilitas": [
+        "Kasur Springbed",
+        "Lemari Pakaian",
+        "Meja Belajar",
+        "WiFi High Speed",
+        "Kamar Mandi Luar Bersih"
+      ]
+    },
+    {
+      "kodeKamar": "B-02",
+      "tipe": "putra",
+      "harga": 950000,
+      "status": "tersedia",
+      "terisiHingga": null,
+      "deskripsi": "Kamar Deluxe Putra dengan fasilitas AC dingin.",
+      "fasilitas": [
+        "AC 1/2 PK",
+        "Kasur Springbed",
+        "Lemari Pakaian",
+        "Meja Belajar",
+        "WiFi High Speed",
+        "Kamar Mandi Luar Bersih"
+      ]
+    },
+    {
+      "kodeKamar": "B-03",
+      "tipe": "putra",
+      "harga": 1100000,
+      "status": "terisi",
+      "terisiHingga": "2026-11-15",
+      "deskripsi": "Kamar VIP Putra dengan fasilitas lengkap siap huni.",
+      "fasilitas": [
+        "AC 1 PK",
+        "Kasur Queen",
+        "Lemari 3 Pintu",
+        "Meja Belajar",
+        "WiFi High Speed",
+        "Kamar Mandi Dalam"
+      ]
+    },
+    {
+      "kodeKamar": "B-04",
+      "tipe": "putra",
+      "harga": 850000,
+      "status": "tersedia",
+      "terisiHingga": null,
+      "deskripsi": "Kamar Standard Putra lantai 2 dengan pencahayaan alami.",
+      "fasilitas": [
+        "Kasur Springbed",
+        "Lemari Pakaian",
+        "WiFi High Speed"
+      ]
+    }
+  ],
+  "methods": [
+    {
+      "idMetode": 1,
+      "namaMetode": "Transfer Bank BCA",
+      "nomorTujuan": "822-019-2819"
+    },
+    {
+      "idMetode": 2,
+      "namaMetode": "Transfer Bank Mandiri",
+      "nomorTujuan": "108-00-2918271-1"
+    },
+    {
+      "idMetode": 3,
+      "namaMetode": "DANA",
+      "nomorTujuan": "0896-6132-7050"
+    },
+    {
+      "idMetode": 4,
+      "namaMetode": "QRIS",
+      "nomorTujuan": "ID1029384756"
+    }
+  ],
+  "bookings": [
+    {
+      "idBooking": "KZ-0118",
+      "tanggalMulai": "2026-10-26",
+      "durasi": 1,
+      "status": "approved",
+      "alasan": null,
+      "idPengguna": 2,
+      "kodeKamar": "A-03",
+      "idMetode": 1,
+      "createdAt": 1792852234650,
+      "namaPengguna": "Farah",
+      "emailPengguna": "farah@kozzy.id",
+      "noTeleponPengguna": "081234567891",
+      "tipeKamar": "putri",
+      "hargaKamar": 1100000,
+      "namaMetode": "Transfer Bank BCA",
+      "nomorTujuan": "822-019-2819",
+      "fileBukti": "assets/uploads/bukti/bukti_kz0118.jpg"
+    },
+    {
+      "idBooking": "KZ-0119",
+      "tanggalMulai": "2026-11-01",
+      "durasi": 3,
+      "status": "pending",
+      "alasan": null,
+      "idPengguna": 3,
+      "kodeKamar": "B-02",
+      "idMetode": 3,
+      "createdAt": 1792938634650,
+      "namaPengguna": "Fildza",
+      "emailPengguna": "fildza@kozzy.id",
+      "noTeleponPengguna": "081298765432",
+      "tipeKamar": "putra",
+      "hargaKamar": 950000,
+      "namaMetode": "DANA",
+      "nomorTujuan": "0896-6132-7050",
+      "fileBukti": "assets/uploads/bukti/bukti_kz0119.jpg"
+    }
+  ],
+  "history": [
+    {
+      "idRiwayat": 1,
+      "keputusan": "approved",
+      "tanggalKeputusan": 1792938634650,
+      "catatan": "Pembayaran sewa awal terverifikasi sah via BCA.",
+      "idPengguna": 1,
+      "idBooking": "KZ-0118",
+      "namaAdmin": "Admin Kozzy (Akiel)"
+    }
+  ]
+}

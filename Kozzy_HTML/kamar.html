@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kamar — Kozzy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-dalam">
+    <a class="logo" href="index.html">
+    <img src="logo kos.png" alt="Logo">
+    Kozzy<b>.</b>
+    </a>
+    <nav class="menu">
+      <a href="index.html">Beranda</a>
+      <a href="kamar.html">Kamar</a>
+      <a href="sewaku.html">Sewaku</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+    <div class="nav-user" id="navUser"></div>
+  </div>
+</header>
+
+<section class="wadah hal-isi">
+  <span class="label-bagian">DAFTAR KAMAR</span>
+  <h1>Pilih kamarmu.</h1>
+  <p class="sub">Klik tombol Detail untuk lihat fasilitas lengkapnya.</p>
+  <div class="baris-filter">
+    <a class="chip" id="chipSemua" href="kamar.html">Semua</a>
+    <a class="chip" id="chipPutra" href="kamar.html?tipe=putra">Putra</a>
+    <a class="chip" id="chipPutri" href="kamar.html?tipe=putri">Putri</a>
+  </div>
+  <div id="daftarKamar"></div>
+</section>
+
+<!-- modal detail kamar -->
+<div class="modal" id="modalDetail" onclick="if (event.target == this) tutupModal('modalDetail')">
+  <div class="modal-kotak">
+    <button class="tutup" onclick="tutupModal('modalDetail')">×</button>
+    <img id="dFoto" class="detail-foto" src="" alt="Foto kamar">
+    <h3 id="dKode"></h3>
+    <span id="dStatus" class="lencana"></span>
+    <p id="dHarga" class="harga-besar"></p>
+    <p id="dDeskripsi" class="deskripsi"></p>
+    <p><b>Fasilitas:</b> <span id="dFasilitas"></span></p>
+    <div id="dAksi"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div><b style="font-size:26px">Kozzy<b>.</b></b><br><small>Kos bulanan · Putra &amp; Putri · Pekanbaru</small></div>
+  <div class="ket-footer"><small>0896-6132-7050 (WA) · kozzy@gmail.com<br>Jl. Bangau Perkasa, Pekanbaru</small></div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
