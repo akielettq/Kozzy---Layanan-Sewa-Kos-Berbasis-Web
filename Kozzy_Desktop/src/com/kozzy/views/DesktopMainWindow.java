@@ -14,7 +14,6 @@ import java.awt.*;
  * - Sisi Kiri: DesktopSidebar (Navigasi Rail Instan).
  * - Sisi Atas: Banner Pemberitahuan jika MySQL belum aktif beserta tombol coba sambung ulang.
  * - Sisi Tengah: CardLayout Konten Desktop (100% Full Layar, Tanpa Scroll Vertikal Halaman).
- * - Panel Admin dibuka terpisah sebagai jendela workstation mandiri.
  */
 public class DesktopMainWindow extends JFrame {
 
@@ -36,18 +35,11 @@ public class DesktopMainWindow extends JFrame {
         super("Kozzy Desktop — Sistem Manajemen Kos Bulanan");
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1180, 740);
-        setMinimumSize(new Dimension(1000, 640));
+        setSize(1500, 900);
+        setMinimumSize(new Dimension(1250, 800));
         setLocationRelativeTo(null);
         getContentPane().setBackground(UITheme.BG_CANVAS);
         setLayout(new BorderLayout());
-
-        try {
-            java.io.File iconFile = com.kozzy.views.components.ImageHelper.resolveFile("assets/logo kos.png");
-            if (iconFile != null && iconFile.exists()) {
-                setIconImage(javax.imageio.ImageIO.read(iconFile));
-            }
-        } catch (Exception ignored) {}
 
         // 1. Sidebar Kiri
         sidebar = new DesktopSidebar(cardKey -> showPage(cardKey));
@@ -62,10 +54,6 @@ public class DesktopMainWindow extends JFrame {
         berandaView = new DesktopBerandaView(new DesktopBerandaView.BerandaActionCallback() {
             @Override
             public void onSelectRoom(String kodeKamar) {
-                if ("ADMIN".equalsIgnoreCase(kodeKamar)) {
-                    showPage("ADMIN");
-                    return;
-                }
                 showPage("KAMAR");
                 kamarView.selectRoomByKode(kodeKamar);
             }
@@ -115,18 +103,12 @@ public class DesktopMainWindow extends JFrame {
         profilView = new DesktopProfilView(new DesktopProfilView.ProfilActionCallback() {
             @Override
             public void onLogout() {
-                DesktopAdminView.closeAdminWindow();
                 showPage("BERANDA");
             }
 
             @Override
             public void onNavigateToSewaku() {
-                Pengguna current = authController.getCurrentUser();
-                if (current != null && current.isAdmin()) {
-                    showPage("ADMIN");
-                } else {
-                    showPage("SEWAKU");
-                }
+                showPage("SEWAKU");
             }
         });
 
@@ -134,10 +116,9 @@ public class DesktopMainWindow extends JFrame {
             sidebar.updateUserState();
             Pengguna user = authController.getCurrentUser();
             if (user != null && user.isAdmin()) {
-                showPage("BERANDA");
+                adminView.refreshData();
                 showPage("ADMIN");
             } else {
-                DesktopAdminView.closeAdminWindow();
                 sewakuView.refreshData();
                 showPage("SEWAKU");
             }
@@ -162,9 +143,6 @@ public class DesktopMainWindow extends JFrame {
 
         // Listen for session changes
         authController.addSessionListener(user -> {
-            if (user == null || !user.isAdmin()) {
-                DesktopAdminView.closeAdminWindow();
-            }
             sidebar.updateUserState();
             berandaView.refreshData();
         });
@@ -202,22 +180,23 @@ public class DesktopMainWindow extends JFrame {
                         BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(0xA5, 0xD6, 0xA7)),
                         BorderFactory.createEmptyBorder(8, 20, 8, 20)
                 ));
-                lblMsg.setText("Berhasil terhubung ke database MySQL (kozzy_db)!");
+                lblMsg.setText("✓ Berhasil terhubung ke database MySQL (kozzy_db)!");
                 lblMsg.setForeground(new Color(0x1F, 0x5B, 0x41));
                 btnReconnect.setVisible(false);
                 refreshCurrentPage();
                 berandaView.refreshData();
-                UITheme.showSuccess(this, "Koneksi Berhasil", "Berhasil terhubung ke database MySQL (kozzy_db)!");
+                JOptionPane.showMessageDialog(this, "Berhasil terhubung ke database MySQL (kozzy_db)!", "Koneksi Berhasil", JOptionPane.INFORMATION_MESSAGE);
                 Timer t = new Timer(3500, ev -> banner.setVisible(false));
                 t.setRepeats(false);
                 t.start();
             } else {
-                UITheme.showWarning(
+                JOptionPane.showMessageDialog(
                     this,
-                    "Pemberitahuan Database",
                     "MySQL belum aktif!\n\n" +
                     "Pastikan modul MySQL di XAMPP Control Panel sudah dalam status 'Running' (tombol Start sudah diklik).\n" +
-                    (DatabaseConnection.getInstance().getLastErrorMessage().isEmpty() ? "" : "\nInfo: " + DatabaseConnection.getInstance().getLastErrorMessage())
+                    (DatabaseConnection.getInstance().getLastErrorMessage().isEmpty() ? "" : "\nInfo: " + DatabaseConnection.getInstance().getLastErrorMessage()),
+                    "Pemberitahuan Database",
+                    JOptionPane.WARNING_MESSAGE
                 );
             }
         });
@@ -242,16 +221,6 @@ public class DesktopMainWindow extends JFrame {
     }
 
     public void showPage(String cardKey) {
-        if ("ADMIN".equalsIgnoreCase(cardKey)) {
-            DesktopAdminView.openAdminWindow(() -> {
-                berandaView.refreshData();
-                kamarView.loadKamarList();
-                sewakuView.refreshData();
-            });
-            sidebar.setActiveKey(currentPage);
-            return;
-        }
-
         this.currentPage = cardKey;
         cardLayout.show(contentCards, cardKey);
         sidebar.setActiveKey(cardKey);
