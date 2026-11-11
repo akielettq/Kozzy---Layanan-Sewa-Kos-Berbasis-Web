@@ -1,6 +1,6 @@
-# Kozzy Desktop Workstation GUI (Desktop-First / Full-Screen / Tanpa Scroll Halaman)
+# Kozzy Desktop
 
-Aplikasi Desktop Sistem Manajemen & Pemesanan Kos Bulanan **Kozzy** berbasis **Java Swing (Object-Oriented Programming - PBO)**.
+Aplikasi Desktop Sistem Manajemen & Pemesanan Kos Bulanan **Kozzy** berbasis **Java Swing (PBO)**.
 ---
 
 ## 📁 Struktur Direktori Proyek
