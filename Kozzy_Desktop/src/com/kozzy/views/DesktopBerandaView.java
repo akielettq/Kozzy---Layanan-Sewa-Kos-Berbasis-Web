@@ -15,14 +15,12 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 /**
  * DesktopBerandaView: Tampilan Dashboard Utama Komprehensif Berorientasi Desktop.
  * - Seluruh informasi muat dalam 1 layar tanpa scroll vertikal.
- * - Murni menangani tampilan UI (View); seluruh logika perhitungan data
- *   didelegasikan ke BerandaController (Non-View).
+ * - Akses langsung ke Panel Admin Terpisah untuk akun pengelola/administrator.
  */
 public class DesktopBerandaView extends JPanel {
 
@@ -43,6 +41,7 @@ public class DesktopBerandaView extends JPanel {
     private JPanel gridKamarPanel;
     private JLabel lblWelcome;
     private JLabel lblDbStatus;
+    private JPanel cardAksiButtonPanel;
 
     public DesktopBerandaView(BerandaActionCallback callback) {
         this.callback = callback;
@@ -112,7 +111,7 @@ public class DesktopBerandaView extends JPanel {
         // A. Baris Kartu Metrik KPI (4 Kolom Rata)
         JPanel metricRow = new JPanel(new GridLayout(1, 4, 12, 0));
         metricRow.setOpaque(false);
-        metricRow.setPreferredSize(new Dimension(0, 95));
+        metricRow.setPreferredSize(new Dimension(0, 108));
 
         mcTotal = new MetricCard("Total Kamar", "8", "Gedung A & Gedung B", UITheme.TEXT_MUTED);
         mcTersedia = new MetricCard("Kamar Tersedia", "0", "Siap Disewa", UITheme.PRIMARY_GREEN);
@@ -126,7 +125,7 @@ public class DesktopBerandaView extends JPanel {
 
         centerContainer.add(metricRow, BorderLayout.NORTH);
 
-        // B. Body Dua Kolom (Grid Kamar 60% + Info & Aksi 40%)
+        // B. Body Dua Kolom (Grid Kamar 66% + Info & Aksi 34%)
         JPanel splitBody = new JPanel(new GridBagLayout());
         splitBody.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
@@ -189,6 +188,7 @@ public class DesktopBerandaView extends JPanel {
         JLabel lblGedungTitle = new JLabel("Ketentuan Gedung");
         lblGedungTitle.setFont(UITheme.FONT_TITLE);
         lblGedungTitle.setForeground(UITheme.TEXT_DARK);
+        lblGedungTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         cardInfoGedung.add(lblGedungTitle);
         cardInfoGedung.add(Box.createVerticalStrut(10));
 
@@ -228,11 +228,9 @@ public class DesktopBerandaView extends JPanel {
 
         cardAksi.add(pnlBantuan, BorderLayout.CENTER);
 
-        PillButton btnJelajah = new PillButton("Buka Katalog Kamar Lengkap →", PillButton.Style.PRIMARY);
-        btnJelajah.addActionListener(e -> {
-            if (callback != null) callback.onNavigateToKamar();
-        });
-        cardAksi.add(btnJelajah, BorderLayout.SOUTH);
+        cardAksiButtonPanel = new JPanel(new GridLayout(1, 1, 6, 0));
+        cardAksiButtonPanel.setOpaque(false);
+        cardAksi.add(cardAksiButtonPanel, BorderLayout.SOUTH);
 
         pnlKanan.add(cardAksi);
 
@@ -248,6 +246,7 @@ public class DesktopBerandaView extends JPanel {
     private JPanel createBuildingRow(String header, String desc, Color dotColor) {
         JPanel row = new JPanel(new BorderLayout(8, 0));
         row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JPanel dot = new JPanel() {
             @Override
@@ -294,6 +293,8 @@ public class DesktopBerandaView extends JPanel {
         }
 
         Pengguna user = summary.getCurrentUser();
+        boolean isAdmin = (user != null && user.isAdmin());
+
         if (user != null) {
             lblWelcome.setText("Selamat Datang, " + user.getNama() + " (" + user.getRoleDisplayName() + ")");
         } else {
@@ -304,6 +305,34 @@ public class DesktopBerandaView extends JPanel {
         mcTersedia.setValue(String.valueOf(summary.getKamarTersedia()));
         mcTerisi.setValue(String.valueOf(summary.getKamarTerisi()));
         mcPending.setValue(String.valueOf(summary.getTotalPending()));
+
+        if (cardAksiButtonPanel != null) {
+            cardAksiButtonPanel.removeAll();
+            if (isAdmin) {
+                cardAksiButtonPanel.setLayout(new GridLayout(2, 1, 0, 6));
+
+                PillButton btnAdminWin = new PillButton("Buka Panel Admin (Jendela Terpisah) →", PillButton.Style.PRIMARY);
+                btnAdminWin.addActionListener(e -> {
+                    if (callback != null) callback.onSelectRoom("ADMIN");
+                });
+                cardAksiButtonPanel.add(btnAdminWin);
+
+                PillButton btnKamar = new PillButton("Buka Katalog Kamar", PillButton.Style.OUTLINE);
+                btnKamar.addActionListener(e -> {
+                    if (callback != null) callback.onNavigateToKamar();
+                });
+                cardAksiButtonPanel.add(btnKamar);
+            } else {
+                cardAksiButtonPanel.setLayout(new GridLayout(1, 1, 0, 0));
+                PillButton btnJelajah = new PillButton("Buka Katalog Kamar Lengkap →", PillButton.Style.PRIMARY);
+                btnJelajah.addActionListener(e -> {
+                    if (callback != null) callback.onNavigateToKamar();
+                });
+                cardAksiButtonPanel.add(btnJelajah);
+            }
+            cardAksiButtonPanel.revalidate();
+            cardAksiButtonPanel.repaint();
+        }
 
         // Render Ubin Status Kamar dari data yang disiapkan Controller
         gridKamarPanel.removeAll();
@@ -358,7 +387,7 @@ public class DesktopBerandaView extends JPanel {
 
         // Center: Harga singkat
         String hrgStr = (k.getHarga() / 1000) + " rb / bln";
-        JLabel lblHrg = new JLabel(hrgStr);
+        JLabel lblHrg = new JLabel(hrgStr, SwingConstants.CENTER);
         lblHrg.setFont(new Font("Segoe UI", Font.BOLD, 11));
         lblHrg.setForeground(isAvail ? UITheme.PRIMARY_GREEN : UITheme.TEXT_MUTED);
         tile.add(lblHrg, BorderLayout.CENTER);

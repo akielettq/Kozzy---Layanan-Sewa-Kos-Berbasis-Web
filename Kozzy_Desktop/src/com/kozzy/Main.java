@@ -25,19 +25,18 @@ public class Main {
 
                 // Pemberitahuan jika MySQL belum aktif saat startup
                 if (!DatabaseConnection.checkConnection() && System.getProperty("kozzy.silent") == null) {
-                    JOptionPane.showMessageDialog(
+                    UITheme.showWarning(
                         window,
-                        "⚠️ Pemberitahuan: Database MySQL Belum Aktif\n\n" +
+                        "Koneksi Database MySQL",
+                        "Pemberitahuan: Database MySQL Belum Aktif\n\n" +
                         "Aplikasi tidak dapat terhubung ke database MySQL (localhost:3306/kozzy_db).\n" +
                         "Silakan buka XAMPP Control Panel dan klik 'Start' pada modul MySQL.\n\n" +
-                        "Catatan: Aplikasi sementara berjalan dengan data cadangan offline.",
-                        "Koneksi Database MySQL",
-                        JOptionPane.WARNING_MESSAGE
+                        "Catatan: Aplikasi sementara berjalan dengan data cadangan offline."
                     );
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(null, "Galat memulai aplikasi: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                UITheme.showError(null, "Error", "Galat memulai aplikasi: " + ex.getMessage());
             }
         });
     }

@@ -37,6 +37,7 @@ public class DesktopProfilView extends JPanel {
     private JLabel lblStatTotal;
     private JLabel lblStatAktif;
     private JLabel lblStatPengeluaran;
+    private PillButton btnLihatSewa;
 
     public DesktopProfilView(ProfilActionCallback callback) {
         this.callback = callback;
@@ -109,8 +110,9 @@ public class DesktopProfilView extends JPanel {
         pnlUserCard.add(lblName);
         pnlUserCard.add(Box.createVerticalStrut(4));
 
-        pnlRoleBadge = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pnlRoleBadge = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         pnlRoleBadge.setOpaque(false);
+        pnlRoleBadge.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         pnlRoleBadge.setAlignmentX(Component.CENTER_ALIGNMENT);
         pnlUserCard.add(pnlRoleBadge);
         pnlUserCard.add(Box.createVerticalStrut(16));
@@ -122,6 +124,8 @@ public class DesktopProfilView extends JPanel {
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1, true),
                 BorderFactory.createEmptyBorder(12, 14, 12, 14)
         ));
+        infoList.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
+        infoList.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         infoList.add(new JLabel("Alamat Email:"));
         lblEmail = new JLabel("email@kozzy.id");
@@ -140,8 +144,17 @@ public class DesktopProfilView extends JPanel {
         btnKeluar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnKeluar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         btnKeluar.addActionListener(e -> {
-            authController.logout();
-            if (callback != null) callback.onLogout();
+            boolean confirm = UITheme.showConfirm(
+                    this,
+                    "Konfirmasi Keluar",
+                    "Apakah kamu yakin ingin keluar dari akun saat ini?",
+                    "Keluar Akun",
+                    PillButton.Style.DANGER
+            );
+            if (confirm) {
+                authController.logout();
+                if (callback != null) callback.onLogout();
+            }
         });
         pnlUserCard.add(btnKeluar);
         centerPnl.add(pnlUserCard);
@@ -158,11 +171,14 @@ public class DesktopProfilView extends JPanel {
         JLabel lblStatTitle = new JLabel("Statistik & Ringkasan Sewa");
         lblStatTitle.setFont(UITheme.FONT_TITLE);
         lblStatTitle.setForeground(UITheme.TEXT_DARK);
+        lblStatTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         pnlStats.add(lblStatTitle);
         pnlStats.add(Box.createVerticalStrut(14));
 
         JPanel statGrid = new JPanel(new GridLayout(3, 1, 0, 10));
         statGrid.setOpaque(false);
+        statGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 165));
+        statGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         lblStatTotal = new JLabel("0 Kali");
         lblStatAktif = new JLabel("Tidak Ada");
@@ -175,7 +191,7 @@ public class DesktopProfilView extends JPanel {
         pnlStats.add(statGrid);
         pnlStats.add(Box.createVerticalStrut(20));
 
-        PillButton btnLihatSewa = new PillButton("Buka Halaman Sewa Saya →", PillButton.Style.PRIMARY);
+        btnLihatSewa = new PillButton("Buka Halaman Sewa Saya →", PillButton.Style.PRIMARY);
         btnLihatSewa.setAlignmentX(Component.LEFT_ALIGNMENT);
         btnLihatSewa.addActionListener(e -> {
             if (callback != null) callback.onNavigateToSewaku();
@@ -222,6 +238,12 @@ public class DesktopProfilView extends JPanel {
 
         pnlRoleBadge.removeAll();
         pnlRoleBadge.add(PillBadge.createStatusBadge(user.isAdmin() ? "ADMINISTRATOR" : "PENCARI KOS"));
+
+        if (btnLihatSewa != null) {
+            btnLihatSewa.setText(user.isAdmin()
+                    ? "Buka Panel Admin (Jendela Terpisah) →"
+                    : "Buka Halaman Sewa Saya →");
+        }
 
         lblStatTotal.setText(summary.getTotalBooking() + " Transaksi");
         lblStatAktif.setText(summary.getTotalAktif() > 0 ? "Aktif Menghuni" : "Tidak Ada");

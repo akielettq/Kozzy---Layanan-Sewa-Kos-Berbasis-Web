@@ -19,6 +19,7 @@ import java.util.List;
 /**
  * DesktopBookingDialog: Modal Dialog Pengajuan Booking Kamar Berorientasi Desktop.
  * - Murni tampilan UI form; seluruh validasi dan proses pengajuan sewa didelegasikan ke BookingController.
+ * - Menggunakan jendela pop-up kustom UITheme dan pratinjau bukti pembayaran interaktif.
  */
 public class DesktopBookingDialog extends JDialog {
 
@@ -39,12 +40,18 @@ public class DesktopBookingDialog extends JDialog {
         this.kamar = kamar;
         this.onSuccess = onSuccess;
 
-        setSize(480, 560);
-        setLocationRelativeTo(owner);
         getContentPane().setBackground(UITheme.BG_CARD);
         setLayout(new BorderLayout());
 
         initUI();
+
+        pack();
+        int w = Math.max(520, getWidth() + 20);
+        int h = Math.max(580, getHeight() + 20);
+        setSize(w, h);
+        setMinimumSize(new Dimension(500, 560));
+        setResizable(true);
+        setLocationRelativeTo(owner);
     }
 
     private void initUI() {
@@ -57,26 +64,30 @@ public class DesktopBookingDialog extends JDialog {
         JLabel lblTitle = new JLabel("Formulir Pemesanan Kamar");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitle.setForeground(UITheme.TEXT_DARK);
+        lblTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblTitle);
         content.add(Box.createVerticalStrut(4));
 
-        JLabel lblSub = new JLabel("Kamar " + kamar.getKodeKamar() + " (" + kamar.getTipe().toUpperCase() + ") · " + kamar.formatRupiah() + " / bln");
-        lblSub.setFont(UITheme.FONT_BODY);
+        JLabel lblSub = new JLabel("Kamar " + kamar.getKodeKamar() + " (" + kamar.getTipe().toUpperCase() + ") · " + kamar.formatRupiah());
+        lblSub.setFont(UITheme.FONT_BODY_BOLD);
         lblSub.setForeground(UITheme.PRIMARY_GREEN);
+        lblSub.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblSub);
         content.add(Box.createVerticalStrut(16));
 
         // Form Fields
         content.add(createLabel("Tanggal Mulai Sewa (YYYY-MM-DD)"));
         txtTanggal = new JTextField(LocalDate.now().plusDays(1).toString());
-        txtTanggal.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        txtTanggal.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        txtTanggal.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(txtTanggal);
         content.add(Box.createVerticalStrut(10));
 
-        content.add(createLabel("Durasi Sewa"));
+        content.add(createLabel("Durasi Sewa (Bulan)"));
         Integer[] durasiOptions = {1, 3, 6, 12};
         cmbDurasi = new JComboBox<>(durasiOptions);
-        cmbDurasi.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        cmbDurasi.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        cmbDurasi.setAlignmentX(Component.LEFT_ALIGNMENT);
         cmbDurasi.addActionListener(e -> updateTotalBiaya());
         content.add(cmbDurasi);
         content.add(Box.createVerticalStrut(10));
@@ -84,7 +95,8 @@ public class DesktopBookingDialog extends JDialog {
         content.add(createLabel("Metode Pembayaran"));
         List<MetodePembayaran> methods = controller.getAllPaymentMethods();
         cmbMetode = new JComboBox<>(methods.toArray(new MetodePembayaran[0]));
-        cmbMetode.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        cmbMetode.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        cmbMetode.setAlignmentX(Component.LEFT_ALIGNMENT);
         cmbMetode.addActionListener(e -> updateMetodeInfo());
         content.add(cmbMetode);
         content.add(Box.createVerticalStrut(6));
@@ -93,33 +105,59 @@ public class DesktopBookingDialog extends JDialog {
         lblNomorTujuan = new JLabel("Tujuan: -");
         lblNomorTujuan.setFont(UITheme.FONT_SMALL);
         lblNomorTujuan.setForeground(UITheme.TEXT_MUTED);
+        lblNomorTujuan.setAlignmentX(Component.LEFT_ALIGNMENT);
         content.add(lblNomorTujuan);
-        content.add(Box.createVerticalStrut(10));
+        content.add(Box.createVerticalStrut(12));
 
         // Bukti Transfer
         content.add(createLabel("Bukti Transfer"));
         JPanel fileRow = new JPanel(new BorderLayout(8, 0));
         fileRow.setOpaque(false);
         fileRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        fileRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         lblFileBukti = new JLabel("bukti_transfer.jpg (Default Demo)");
         lblFileBukti.setFont(UITheme.FONT_SMALL);
         lblFileBukti.setForeground(UITheme.TEXT_MUTED);
         fileRow.add(lblFileBukti, BorderLayout.CENTER);
 
+        JPanel pnlFileBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        pnlFileBtns.setOpaque(false);
+
+        JButton btnPreview = new JButton("Lihat Preview");
+        btnPreview.setFont(UITheme.FONT_SMALL);
+        btnPreview.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnPreview.addActionListener(e -> {
+            UITheme.showImagePreview(
+                this,
+                "Pratinjau Bukti Pembayaran",
+                selectedFilePath,
+                "Kamar " + kamar.getKodeKamar()
+            );
+        });
+
         JButton btnChoose = new JButton("Pilih File...");
         btnChoose.setFont(UITheme.FONT_SMALL);
         btnChoose.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnChoose.addActionListener(e -> {
             JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Pilih Berkas Bukti Transfer Pembayaran");
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                "Berkas Gambar (JPG, JPEG, PNG, GIF, BMP, WEBP)",
+                "jpg", "jpeg", "png", "gif", "bmp", "webp"
+            ));
             int res = chooser.showOpenDialog(this);
             if (res == JFileChooser.APPROVE_OPTION) {
                 File f = chooser.getSelectedFile();
                 selectedFilePath = f.getAbsolutePath();
                 lblFileBukti.setText(f.getName());
+                lblFileBukti.setForeground(UITheme.TEXT_DARK);
             }
         });
-        fileRow.add(btnChoose, BorderLayout.EAST);
+
+        pnlFileBtns.add(btnChoose);
+        pnlFileBtns.add(btnPreview);
+        fileRow.add(pnlFileBtns, BorderLayout.EAST);
         content.add(fileRow);
         content.add(Box.createVerticalStrut(16));
 
@@ -130,7 +168,8 @@ public class DesktopBookingDialog extends JDialog {
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1, true),
                 BorderFactory.createEmptyBorder(10, 14, 10, 14)
         ));
-        totalBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        totalBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
+        totalBox.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel lblTotalT = new JLabel("Total Biaya Sewa:");
         lblTotalT.setFont(UITheme.FONT_BODY_BOLD);
@@ -148,6 +187,8 @@ public class DesktopBookingDialog extends JDialog {
         // Tombol Aksi Bawah
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         btnRow.setOpaque(false);
+        btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         PillButton btnBatal = new PillButton("Batal", PillButton.Style.OUTLINE);
         btnBatal.addActionListener(e -> dispose());
@@ -159,7 +200,11 @@ public class DesktopBookingDialog extends JDialog {
 
         content.add(btnRow);
 
-        add(content, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(content);
+        scrollPane.setBorder(null);
+        scrollPane.getViewport().setBackground(UITheme.BG_CARD);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(14);
+        add(scrollPane, BorderLayout.CENTER);
 
         updateMetodeInfo();
         updateTotalBiaya();
@@ -189,7 +234,7 @@ public class DesktopBookingDialog extends JDialog {
     private void submitBooking() {
         Pengguna user = SessionManager.getInstance().getCurrentUser();
         if (user == null) {
-            JOptionPane.showMessageDialog(this, "Silakan login terlebih dahulu.", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            UITheme.showWarning(this, "Peringatan", "Silakan login terlebih dahulu.");
             return;
         }
 
@@ -198,7 +243,7 @@ public class DesktopBookingDialog extends JDialog {
         try {
             tglMulai = Date.valueOf(tglStr);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Format tanggal salah. Gunakan YYYY-MM-DD (Contoh: " + LocalDate.now() + ")", "Galat", JOptionPane.ERROR_MESSAGE);
+            UITheme.showError(this, "Format Tanggal Salah", "Format tanggal salah. Gunakan YYYY-MM-DD (Contoh: " + LocalDate.now() + ")");
             return;
         }
 
@@ -215,12 +260,14 @@ public class DesktopBookingDialog extends JDialog {
 
         String err = controller.ajukanBooking(booking, selectedFilePath);
         if (err == null) {
-            String dbNote = controller.isDatabaseConnected() ? "" : "\n\n⚠️ Catatan: Database MySQL belum aktif di XAMPP.\nData disimpan sementara di memori cadangan.";
-            JOptionPane.showMessageDialog(this, "Pengajuan booking berhasil dikirim! Menunggu verifikasi admin." + dbNote, "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            String dbNote = controller.isDatabaseConnected()
+                    ? ""
+                    : "\n\nCatatan: Database MySQL belum aktif di XAMPP.\nData disimpan sementara di memori cadangan.";
+            UITheme.showSuccess(this, "Pengajuan Terkirim", "Pengajuan booking berhasil dikirim! Menunggu verifikasi admin." + dbNote);
             dispose();
             if (onSuccess != null) onSuccess.run();
         } else {
-            JOptionPane.showMessageDialog(this, err, "Gagal Booking", JOptionPane.ERROR_MESSAGE);
+            UITheme.showError(this, "Gagal Booking", err);
         }
     }
 }

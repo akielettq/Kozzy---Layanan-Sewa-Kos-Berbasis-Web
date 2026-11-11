@@ -190,10 +190,11 @@ public class DesktopLoginView extends JPanel {
     }
 
     private JLabel createFieldLabel(String text) {
-        JLabel l = new JLabel(text);
+        JLabel l = new JLabel(text, SwingConstants.LEFT);
         l.setFont(UITheme.FONT_BODY_BOLD);
         l.setForeground(UITheme.TEXT_DARK);
-        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        l.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
+        l.setAlignmentX(Component.CENTER_ALIGNMENT);
         return l;
     }
 
@@ -225,7 +226,7 @@ public class DesktopLoginView extends JPanel {
         String password = new String(txtLoginPassword.getPassword()).trim();
 
         if (email.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Silakan isi email dan kata sandi.", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            UITheme.showWarning(this, "Peringatan", "Silakan isi email dan kata sandi.");
             return;
         }
 
@@ -233,7 +234,7 @@ public class DesktopLoginView extends JPanel {
         if (success) {
             if (callback != null) callback.onLoginSuccess();
         } else {
-            JOptionPane.showMessageDialog(this, "Email atau kata sandi tidak cocok.", "Gagal Masuk", JOptionPane.ERROR_MESSAGE);
+            UITheme.showError(this, "Gagal Masuk", "Email atau kata sandi tidak cocok.");
         }
     }
 
@@ -244,18 +245,18 @@ public class DesktopLoginView extends JPanel {
         String pass = new String(txtRegPassword.getPassword()).trim();
 
         if (nama.isEmpty() || email.isEmpty() || phone.isEmpty() || pass.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Semua field pendaftaran wajib diisi.", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            UITheme.showWarning(this, "Peringatan", "Semua field pendaftaran wajib diisi.");
             return;
         }
 
         String err = controller.register(nama, email, pass, phone);
         if (err == null) {
-            JOptionPane.showMessageDialog(this, "Pendaftaran berhasil! Silakan masuk dengan akun barumu.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            UITheme.showSuccess(this, "Sukses", "Pendaftaran berhasil! Silakan masuk dengan akun barumu.");
             switchTab(true);
             txtLoginEmail.setText(email);
             txtLoginPassword.setText(pass);
         } else {
-            JOptionPane.showMessageDialog(this, err, "Gagal Mendaftar", JOptionPane.ERROR_MESSAGE);
+            UITheme.showError(this, "Gagal Mendaftar", err);
         }
     }
 }

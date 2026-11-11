@@ -3,7 +3,6 @@ package com.kozzy.views;
 import com.kozzy.config.UITheme;
 import com.kozzy.controllers.BookingController;
 import com.kozzy.models.Booking;
-import com.kozzy.models.Kamar;
 import com.kozzy.models.Pengguna;
 import com.kozzy.services.SessionManager;
 import com.kozzy.views.components.ImageHelper;
@@ -21,10 +20,9 @@ import java.util.List;
 
 /**
  * DesktopSewakuView: Tampilan Status Sewa Aktif & Riwayat Pemesanan Penghuni.
- * - Sisi Kiri: Kartu Status Sewa Berjalan Lengkap (Foto Kamar, Periode Sewa, Fasilitas).
- * - Sisi Kanan: Tabel Riwayat Seluruh Booking + Panel Rincian Keputusan Verifikasi.
- * - Pas 1 layar penuh desktop tanpa scroll halaman.
- * - Murni tampilan UI; seluruh penelusuran data didelegasikan ke BookingController.
+ * - Sisi Kiri: Kartu Status Sewa Berjalan Lengkap (Foto Kamar, Periode Sewa, Panduan Hunian).
+ * - Sisi Kanan: Tabel Riwayat Seluruh Booking + Panel Rincian Keputusan Verifikasi & Pratinjau Bukti.
+ * - Tata letak proporsional tanpa ruang kosong berlebih.
  */
 public class DesktopSewakuView extends JPanel {
 
@@ -41,6 +39,7 @@ public class DesktopSewakuView extends JPanel {
     private DefaultTableModel tableModel;
     private List<Booking> userBookings = new ArrayList<>();
     private JLabel lblDetailNote;
+    private PillButton btnLihatBuktiRiwayat;
 
     public DesktopSewakuView(SewakuActionCallback callback) {
         this.callback = callback;
@@ -86,7 +85,7 @@ public class DesktopSewakuView extends JPanel {
         pnlActiveRental = new JPanel(new BorderLayout());
         pnlActiveRental.setBackground(UITheme.BG_CARD);
         pnlActiveRental.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1, true),
+                BorderFactory.createLineBorder(UITheme.BORDER_DARK, 1, true),
                 BorderFactory.createEmptyBorder(16, 18, 16, 18)
         ));
         splitContainer.add(pnlActiveRental);
@@ -95,7 +94,7 @@ public class DesktopSewakuView extends JPanel {
         JPanel pnlRiwayat = new JPanel(new BorderLayout(0, 10));
         pnlRiwayat.setBackground(UITheme.BG_CARD);
         pnlRiwayat.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1, true),
+                BorderFactory.createLineBorder(UITheme.BORDER_DARK, 1, true),
                 BorderFactory.createEmptyBorder(14, 16, 14, 16)
         ));
 
@@ -119,6 +118,7 @@ public class DesktopSewakuView extends JPanel {
         bookingTable.setGridColor(new Color(0xEE, 0xEA, 0xE0));
         bookingTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         bookingTable.setFillsViewportHeight(true);
+        bookingTable.setRowHeight(38);
 
         bookingTable.getColumnModel().getColumn(0).setPreferredWidth(60);
         bookingTable.getColumnModel().getColumn(1).setPreferredWidth(65);
@@ -166,6 +166,23 @@ public class DesktopSewakuView extends JPanel {
         lblDetailNote.setForeground(UITheme.TEXT_MUTED);
         pnlNote.add(lblDetailNote, BorderLayout.CENTER);
 
+        btnLihatBuktiRiwayat = new PillButton("Lihat Bukti", PillButton.Style.OUTLINE);
+        btnLihatBuktiRiwayat.setPreferredSize(new Dimension(105, 32));
+        btnLihatBuktiRiwayat.setEnabled(false);
+        btnLihatBuktiRiwayat.addActionListener(e -> {
+            int row = bookingTable.getSelectedRow();
+            if (row >= 0 && row < userBookings.size()) {
+                Booking sel = userBookings.get(row);
+                UITheme.showImagePreview(
+                    this,
+                    "Bukti Pembayaran — " + sel.getIdBooking(),
+                    sel.getFileBukti(),
+                    "Kamar " + sel.getKodeKamar() + " · " + sel.getDurasi() + " Bulan"
+                );
+            }
+        });
+        pnlNote.add(btnLihatBuktiRiwayat, BorderLayout.EAST);
+
         pnlRiwayat.add(pnlNote, BorderLayout.SOUTH);
 
         splitContainer.add(pnlRiwayat);
@@ -186,6 +203,7 @@ public class DesktopSewakuView extends JPanel {
         // Update Tabel Riwayat
         tableModel.setRowCount(0);
         Booking activeBooking = null;
+        Booking fallbackApproved = null;
         LocalDate now = LocalDate.now();
 
         for (Booking b : userBookings) {
@@ -198,12 +216,18 @@ public class DesktopSewakuView extends JPanel {
                     String.format("Rp %,d", b.hitungTotalBiaya()).replace(',', '.')
             });
 
-            // Cek booking aktif berjalan
-            if (activeBooking == null && "approved".equalsIgnoreCase(b.getStatus())) {
-                if (b.hitungTanggalSelesai() != null && !b.hitungTanggalSelesai().toLocalDate().isBefore(now)) {
+            // Cek booking aktif berjalan (konsisten dengan ProfilController & BookingService)
+            if ("approved".equalsIgnoreCase(b.getStatus()) || "disetujui".equalsIgnoreCase(b.getStatus())) {
+                if (fallbackApproved == null) {
+                    fallbackApproved = b;
+                }
+                if (activeBooking == null && b.hitungTanggalSelesai() != null && !b.hitungTanggalSelesai().toLocalDate().isBefore(now)) {
                     activeBooking = b;
                 }
             }
+        }
+        if (activeBooking == null) {
+            activeBooking = fallbackApproved;
         }
 
         // Render Sisi Kiri (Sewa Aktif)
@@ -214,6 +238,7 @@ public class DesktopSewakuView extends JPanel {
             showBookingDetailNote(userBookings.get(0));
         } else {
             lblDetailNote.setText("Belum ada transaksi pemesanan kamar yang diajukan.");
+            if (btnLihatBuktiRiwayat != null) btnLihatBuktiRiwayat.setEnabled(false);
         }
 
         revalidate();
@@ -258,9 +283,6 @@ public class DesktopSewakuView extends JPanel {
 
             pnlActiveRental.add(empty, BorderLayout.CENTER);
         } else {
-            // Tampilan Sewa Aktif Berjalan
-            Kamar kamar = controller.getKamarByKode(b.getKodeKamar());
-
             // 1. Header Sewa Aktif (North)
             JPanel topRow = new JPanel(new BorderLayout());
             topRow.setOpaque(false);
@@ -284,11 +306,11 @@ public class DesktopSewakuView extends JPanel {
 
             // Foto Kamar
             String photoPath = "assets/kamar/" + b.getKodeKamar() + ".jpg";
-            BufferedImage img = ImageHelper.loadAndScale(photoPath, 380, 180, 8);
+            BufferedImage img = ImageHelper.loadAndScale(photoPath, 380, 165, 8);
             JLabel lblPhoto = new JLabel(new ImageIcon(img));
             lblPhoto.setAlignmentX(Component.LEFT_ALIGNMENT);
             centerContent.add(lblPhoto);
-            centerContent.add(Box.createVerticalStrut(12));
+            centerContent.add(Box.createVerticalStrut(10));
 
             // Info Kamar & Periode
             JLabel lblKamar = new JLabel("Kamar " + b.getKodeKamar());
@@ -303,17 +325,17 @@ public class DesktopSewakuView extends JPanel {
             lblPeriode.setForeground(UITheme.ACCENT_TERA);
             lblPeriode.setAlignmentX(Component.LEFT_ALIGNMENT);
             centerContent.add(lblPeriode);
-            centerContent.add(Box.createVerticalStrut(12));
+            centerContent.add(Box.createVerticalStrut(10));
 
             // Detail Pembayaran
-            JPanel pnlMeta = new JPanel(new GridLayout(3, 2, 8, 6));
+            JPanel pnlMeta = new JPanel(new GridLayout(4, 2, 8, 6));
             pnlMeta.setOpaque(false);
             pnlMeta.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1, true),
-                    BorderFactory.createEmptyBorder(10, 14, 10, 14)
+                    BorderFactory.createEmptyBorder(8, 12, 8, 12)
             ));
             pnlMeta.setAlignmentX(Component.LEFT_ALIGNMENT);
-            pnlMeta.setMaximumSize(new Dimension(Integer.MAX_VALUE, 85));
+            pnlMeta.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
 
             pnlMeta.add(createMetaLabel("Nomor Booking:"));
             pnlMeta.add(createMetaValue(b.getIdBooking()));
@@ -324,8 +346,46 @@ public class DesktopSewakuView extends JPanel {
             pnlMeta.add(createMetaLabel("Total Dibayar:"));
             pnlMeta.add(createMetaValue(String.format("Rp %,d", b.hitungTotalBiaya()).replace(',', '.')));
 
+            pnlMeta.add(createMetaLabel("Bukti Transfer:"));
+            PillButton btnBuktiAktif = new PillButton("Lihat Berkas", PillButton.Style.OUTLINE);
+            btnBuktiAktif.setPreferredSize(new Dimension(100, 26));
+            btnBuktiAktif.addActionListener(e -> {
+                UITheme.showImagePreview(
+                    this,
+                    "Bukti Pembayaran — " + b.getIdBooking(),
+                    b.getFileBukti(),
+                    "Kamar " + b.getKodeKamar() + " · " + b.getDurasi() + " Bulan"
+                );
+            });
+            JPanel pnlBtnWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            pnlBtnWrap.setOpaque(false);
+            pnlBtnWrap.add(btnBuktiAktif);
+            pnlMeta.add(pnlBtnWrap);
+
             centerContent.add(pnlMeta);
-            centerContent.add(Box.createVerticalGlue());
+            centerContent.add(Box.createVerticalStrut(10));
+
+            // Kartu Panduan Hunian & Bantuan (Mengisi Ruang Tanpa Space Kosong)
+            JPanel pnlInfoHunian = new JPanel(new GridLayout(2, 1, 0, 2));
+            pnlInfoHunian.setBackground(UITheme.BG_CARD_ALT);
+            pnlInfoHunian.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1, true),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            ));
+            pnlInfoHunian.setAlignmentX(Component.LEFT_ALIGNMENT);
+            pnlInfoHunian.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+            JLabel lblInfo1 = new JLabel("• Kunci fisik dapat diambil di pos pengelola atau hubungi pengurus kos.");
+            lblInfo1.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            lblInfo1.setForeground(UITheme.TEXT_DARK);
+            pnlInfoHunian.add(lblInfo1);
+
+            JLabel lblInfo2 = new JLabel("• WiFi Kost: 'Kozzy_Resident_5G' · Sandi tersedia di kamar.");
+            lblInfo2.setFont(new Font("Segoe UI", Font.BOLD, 10));
+            lblInfo2.setForeground(UITheme.PRIMARY_GREEN);
+            pnlInfoHunian.add(lblInfo2);
+
+            centerContent.add(pnlInfoHunian);
 
             pnlActiveRental.add(centerContent, BorderLayout.CENTER);
         }
@@ -350,13 +410,19 @@ public class DesktopSewakuView extends JPanel {
 
     private void showBookingDetailNote(Booking b) {
         if (b == null) return;
-        StringBuilder sb = new StringBuilder("<html><body style='font-size:10.5px; width:440px;'>");
+        if (btnLihatBuktiRiwayat != null) btnLihatBuktiRiwayat.setEnabled(true);
+        StringBuilder sb = new StringBuilder("<html><body style='font-size:10.5px; width:360px;'>");
         sb.append("<b>").append(b.getIdBooking()).append("</b> · Kamar: <b>").append(b.getKodeKamar()).append("</b>");
         sb.append(" · Status: <b>").append(b.getStatus().toUpperCase()).append("</b>");
 
         if ("rejected".equalsIgnoreCase(b.getStatus())) {
             String alasan = b.getAlasan() != null ? b.getAlasan() : "Bukti pembayaran tidak sesuai.";
-            sb.append("<br><span style='color:#C63624;'>Alasan Penolakan: ").append(alasan).append("</span>");
+            String safeAlasan = alasan
+                    .replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\n", "<br>");
+            sb.append("<br><span style='color:#C63624;'>Alasan Penolakan: ").append(safeAlasan).append("</span>");
         } else if ("approved".equalsIgnoreCase(b.getStatus())) {
             sb.append("<br><span style='color:#1F5B41;'>Pembayaran sah terverifikasi. Kunci fisik dapat diambil di pengelola kos.</span>");
         } else {
@@ -369,6 +435,7 @@ public class DesktopSewakuView extends JPanel {
     private void renderUnauthenticatedState() {
         pnlActiveRental.removeAll();
         tableModel.setRowCount(0);
+        if (btnLihatBuktiRiwayat != null) btnLihatBuktiRiwayat.setEnabled(false);
 
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));

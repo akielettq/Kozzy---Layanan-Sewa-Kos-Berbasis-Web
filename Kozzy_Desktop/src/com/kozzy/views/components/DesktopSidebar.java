@@ -118,7 +118,7 @@ public class DesktopSidebar extends JPanel {
         itemBeranda = new NavItem("BERANDA", "🏠", "Beranda");
         itemKamar   = new NavItem("KAMAR",   "🛏️", "Katalog Kamar");
         itemSewaku  = new NavItem("SEWAKU",  "📋", "Sewa Saya");
-        itemAdmin   = new NavItem("ADMIN",   "🛡️", "Panel Admin");
+        itemAdmin   = new NavItem("ADMIN",   "🛡️", "Panel Admin (Pisah)");
         itemProfil  = new NavItem("PROFIL",  "👤", "Profil Akun");
 
         navItems.add(itemBeranda);
@@ -255,11 +255,14 @@ public class DesktopSidebar extends JPanel {
             btnLogout.setContentAreaFilled(false);
             btnLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
             btnLogout.addActionListener(e -> {
-                int confirm = JOptionPane.showConfirmDialog(
-                        this, "Apakah kamu yakin ingin keluar dari akun?",
-                        "Konfirmasi Keluar", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE
+                boolean confirm = UITheme.showConfirm(
+                        this,
+                        "Konfirmasi Keluar",
+                        "Apakah kamu yakin ingin keluar dari akun saat ini?",
+                        "Keluar Akun",
+                        PillButton.Style.DANGER
                 );
-                if (confirm == JOptionPane.YES_OPTION) {
+                if (confirm) {
                     SessionManager.getInstance().logout();
                     if (listener != null) listener.onNavSelected("BERANDA");
                 }
