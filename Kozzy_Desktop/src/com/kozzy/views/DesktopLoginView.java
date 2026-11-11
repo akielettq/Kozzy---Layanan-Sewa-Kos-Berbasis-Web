@@ -10,7 +10,6 @@ import java.awt.*;
 /**
  * DesktopLoginView: Kartu Autentikasi Pengguna & Pendaftaran Berorientasi Desktop.
  * - Desain terpusat di layar, bersih, dan cepat digunakan.
- * - Dilengkapi shortcut 1-klik untuk akun demo (Admin, Farah, Fildza).
  * - Murni antarmuka tampilan (View); validasi dan proses login didelegasikan ke AuthController.
  */
 public class DesktopLoginView extends JPanel {
@@ -60,7 +59,7 @@ public class DesktopLoginView extends JPanel {
         ));
 
         // Header
-        JLabel lblTitle = new JLabel("Akses Akun Kozzy");
+        JLabel lblTitle = new JLabel("Akun Pengguna");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
         lblTitle.setForeground(UITheme.TEXT_DARK);
         lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -113,7 +112,7 @@ public class DesktopLoginView extends JPanel {
         pnlFormMasuk.add(txtLoginPassword);
         pnlFormMasuk.add(Box.createVerticalStrut(18));
 
-        PillButton btnSubmitMasuk = new PillButton("Masuk Sekarang →", PillButton.Style.PRIMARY);
+        PillButton btnSubmitMasuk = new PillButton("Masuk Sekarang", PillButton.Style.PRIMARY);
         btnSubmitMasuk.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         btnSubmitMasuk.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnSubmitMasuk.addActionListener(e -> doLogin());
@@ -148,7 +147,7 @@ public class DesktopLoginView extends JPanel {
         pnlFormDaftar.add(txtRegPassword);
         pnlFormDaftar.add(Box.createVerticalStrut(14));
 
-        PillButton btnSubmitDaftar = new PillButton("Daftar Akun Baru →", PillButton.Style.PRIMARY);
+        PillButton btnSubmitDaftar = new PillButton("Daftar Akun Baru", PillButton.Style.PRIMARY);
         btnSubmitDaftar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         btnSubmitDaftar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnSubmitDaftar.addActionListener(e -> doRegister());
@@ -157,34 +156,6 @@ public class DesktopLoginView extends JPanel {
         formContainer.add(pnlFormMasuk, "MASUK");
         formContainer.add(pnlFormDaftar, "DAFTAR");
         card.add(formContainer);
-
-        card.add(Box.createVerticalStrut(16));
-
-        // Shortcut Demo Accounts
-        JPanel pnlDemo = new JPanel();
-        pnlDemo.setLayout(new BoxLayout(pnlDemo, BoxLayout.Y_AXIS));
-        pnlDemo.setOpaque(false);
-
-        JLabel lblDemoTitle = new JLabel("Pilih Akun Demo Cepat:");
-        lblDemoTitle.setFont(UITheme.FONT_SMALL);
-        lblDemoTitle.setForeground(UITheme.TEXT_MUTED);
-        lblDemoTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnlDemo.add(lblDemoTitle);
-        pnlDemo.add(Box.createVerticalStrut(6));
-
-        JPanel demoRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        demoRow.setOpaque(false);
-
-        JButton btnDemoAdmin = createSmallDemoButton("Admin", "admin@kozzy.id", "admin123");
-        JButton btnDemoFarah = createSmallDemoButton("Farah", "farah@kozzy.id", "123456");
-        JButton btnDemoFildza = createSmallDemoButton("Fildza", "fildza@kozzy.id", "123456");
-
-        demoRow.add(btnDemoAdmin);
-        demoRow.add(btnDemoFarah);
-        demoRow.add(btnDemoFildza);
-        pnlDemo.add(demoRow);
-
-        card.add(pnlDemo);
 
         add(card);
     }
@@ -196,22 +167,6 @@ public class DesktopLoginView extends JPanel {
         l.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
         l.setAlignmentX(Component.CENTER_ALIGNMENT);
         return l;
-    }
-
-    private JButton createSmallDemoButton(String label, String email, String pass) {
-        JButton btn = new JButton(label);
-        btn.setFont(UITheme.FONT_SMALL);
-        btn.setForeground(UITheme.PRIMARY_GREEN);
-        btn.setBackground(new Color(0xDC, 0xED, 0xE1));
-        btn.setFocusPainted(false);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
-        btn.addActionListener(e -> {
-            switchTab(true);
-            txtLoginEmail.setText(email);
-            txtLoginPassword.setText(pass);
-        });
-        return btn;
     }
 
     private void switchTab(boolean isMasuk) {

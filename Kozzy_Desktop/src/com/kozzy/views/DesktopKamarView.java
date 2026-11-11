@@ -124,6 +124,16 @@ public class DesktopKamarView extends JPanel {
         cardsPanel.removeAll();
         resultLabel.setText(currentRoomList.size() + " kamar ditampilkan");
         for (Kamar kamar : currentRoomList) cardsPanel.add(createRoomCard(kamar));
+        // Filter (mis. Putri/Putra) hanya menghasilkan 1 baris sehingga GridLayout meregangkannya
+        // setinggi viewport. Tambahkan sel kosong sampai jumlahnya sama dengan filter 'semua'
+        // agar ukuran kartu selalu sama di semua filter.
+        int totalKamar = "semua".equals(currentFilter)
+                ? currentRoomList.size() : controller.getKamarList("semua").size();
+        for (int i = currentRoomList.size(); i < totalKamar; i++) {
+            JPanel filler = new JPanel();
+            filler.setOpaque(false);
+            cardsPanel.add(filler);
+        }
         cardsPanel.revalidate();
         cardsPanel.repaint();
         updateGridColumns();
@@ -389,7 +399,7 @@ public class DesktopKamarView extends JPanel {
         footerActions.setOpaque(false);
         PillButton closeFooter = new PillButton("Tutup", PillButton.Style.OUTLINE);
         closeFooter.addActionListener(e -> dialog.dispose());
-        PillButton booking = new PillButton("Booking Kamar Ini  →", PillButton.Style.PRIMARY);
+        PillButton booking = new PillButton("Booking Kamar Ini", PillButton.Style.PRIMARY);
         booking.setEnabled(kamar.isTersedia());
         Pengguna user = SessionManager.getInstance().getCurrentUser();
         if (user != null && user.isAdmin()) {

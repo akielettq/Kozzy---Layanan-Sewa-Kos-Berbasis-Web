@@ -311,7 +311,7 @@ public class DesktopBerandaView extends JPanel {
             if (isAdmin) {
                 cardAksiButtonPanel.setLayout(new GridLayout(2, 1, 0, 6));
 
-                PillButton btnAdminWin = new PillButton("Buka Panel Admin (Jendela Terpisah) →", PillButton.Style.PRIMARY);
+                PillButton btnAdminWin = new PillButton("Buka Panel Admin (Jendela Terpisah)", PillButton.Style.PRIMARY);
                 btnAdminWin.addActionListener(e -> {
                     if (callback != null) callback.onSelectRoom("ADMIN");
                 });
@@ -324,7 +324,7 @@ public class DesktopBerandaView extends JPanel {
                 cardAksiButtonPanel.add(btnKamar);
             } else {
                 cardAksiButtonPanel.setLayout(new GridLayout(1, 1, 0, 0));
-                PillButton btnJelajah = new PillButton("Buka Katalog Kamar Lengkap →", PillButton.Style.PRIMARY);
+                PillButton btnJelajah = new PillButton("Buka Katalog Kamar Lengkap", PillButton.Style.PRIMARY);
                 btnJelajah.addActionListener(e -> {
                     if (callback != null) callback.onNavigateToKamar();
                 });

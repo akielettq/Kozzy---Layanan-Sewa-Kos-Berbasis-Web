@@ -191,7 +191,7 @@ public class DesktopProfilView extends JPanel {
         pnlStats.add(statGrid);
         pnlStats.add(Box.createVerticalStrut(20));
 
-        btnLihatSewa = new PillButton("Buka Halaman Sewa Saya →", PillButton.Style.PRIMARY);
+        btnLihatSewa = new PillButton("Buka Halaman Sewa Saya", PillButton.Style.PRIMARY);
         btnLihatSewa.setAlignmentX(Component.LEFT_ALIGNMENT);
         btnLihatSewa.addActionListener(e -> {
             if (callback != null) callback.onNavigateToSewaku();
@@ -241,8 +241,8 @@ public class DesktopProfilView extends JPanel {
 
         if (btnLihatSewa != null) {
             btnLihatSewa.setText(user.isAdmin()
-                    ? "Buka Panel Admin (Jendela Terpisah) →"
-                    : "Buka Halaman Sewa Saya →");
+                    ? "Buka Panel Admin (Jendela Terpisah)"
+                    : "Buka Halaman Sewa Saya");
         }
 
         lblStatTotal.setText(summary.getTotalBooking() + " Transaksi");

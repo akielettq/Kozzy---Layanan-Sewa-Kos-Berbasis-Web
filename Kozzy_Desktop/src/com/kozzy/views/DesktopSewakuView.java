@@ -174,10 +174,10 @@ public class DesktopSewakuView extends JPanel {
             if (row >= 0 && row < userBookings.size()) {
                 Booking sel = userBookings.get(row);
                 UITheme.showImagePreview(
-                    this,
-                    "Bukti Pembayaran — " + sel.getIdBooking(),
-                    sel.getFileBukti(),
-                    "Kamar " + sel.getKodeKamar() + " · " + sel.getDurasi() + " Bulan"
+                        this,
+                        "Bukti Pembayaran — " + sel.getIdBooking(),
+                        sel.getFileBukti(),
+                        "Kamar " + sel.getKodeKamar() + " · " + sel.getDurasi() + " Bulan"
                 );
             }
         });
@@ -274,7 +274,7 @@ public class DesktopSewakuView extends JPanel {
             empty.add(lblSub);
             empty.add(Box.createVerticalStrut(20));
 
-            PillButton btnCari = new PillButton("Cari & Booking Kamar →", PillButton.Style.PRIMARY);
+            PillButton btnCari = new PillButton("Cari & Booking Kamar", PillButton.Style.PRIMARY);
             btnCari.setAlignmentX(Component.CENTER_ALIGNMENT);
             btnCari.addActionListener(e -> {
                 if (callback != null) callback.onExploreRooms();
@@ -335,7 +335,6 @@ public class DesktopSewakuView extends JPanel {
                     BorderFactory.createEmptyBorder(8, 12, 8, 12)
             ));
             pnlMeta.setAlignmentX(Component.LEFT_ALIGNMENT);
-            pnlMeta.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
 
             pnlMeta.add(createMetaLabel("Nomor Booking:"));
             pnlMeta.add(createMetaValue(b.getIdBooking()));
@@ -348,19 +347,23 @@ public class DesktopSewakuView extends JPanel {
 
             pnlMeta.add(createMetaLabel("Bukti Transfer:"));
             PillButton btnBuktiAktif = new PillButton("Lihat Berkas", PillButton.Style.OUTLINE);
-            btnBuktiAktif.setPreferredSize(new Dimension(100, 26));
+            // Padding default PillButton (8/16) membuat teks terpotong pada ukuran 100x26,
+            // jadi gunakan padding lebih kecil dan biarkan lebar mengikuti teks.
+            btnBuktiAktif.setBorder(BorderFactory.createEmptyBorder(4, 14, 4, 14));
             btnBuktiAktif.addActionListener(e -> {
                 UITheme.showImagePreview(
-                    this,
-                    "Bukti Pembayaran — " + b.getIdBooking(),
-                    b.getFileBukti(),
-                    "Kamar " + b.getKodeKamar() + " · " + b.getDurasi() + " Bulan"
+                        this,
+                        "Bukti Pembayaran — " + b.getIdBooking(),
+                        b.getFileBukti(),
+                        "Kamar " + b.getKodeKamar() + " · " + b.getDurasi() + " Bulan"
                 );
             });
             JPanel pnlBtnWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
             pnlBtnWrap.setOpaque(false);
             pnlBtnWrap.add(btnBuktiAktif);
             pnlMeta.add(pnlBtnWrap);
+            // Batas tinggi mengikuti isi (sebelumnya dikunci 110px sehingga baris terakhir terpotong).
+            pnlMeta.setMaximumSize(new Dimension(Integer.MAX_VALUE, pnlMeta.getPreferredSize().height));
 
             centerContent.add(pnlMeta);
             centerContent.add(Box.createVerticalStrut(10));
@@ -373,7 +376,6 @@ public class DesktopSewakuView extends JPanel {
                     BorderFactory.createEmptyBorder(8, 10, 8, 10)
             ));
             pnlInfoHunian.setAlignmentX(Component.LEFT_ALIGNMENT);
-            pnlInfoHunian.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
 
             JLabel lblInfo1 = new JLabel("• Kunci fisik dapat diambil di pos pengelola atau hubungi pengurus kos.");
             lblInfo1.setFont(new Font("Segoe UI", Font.PLAIN, 11));
@@ -384,6 +386,8 @@ public class DesktopSewakuView extends JPanel {
             lblInfo2.setFont(new Font("Segoe UI", Font.BOLD, 10));
             lblInfo2.setForeground(UITheme.PRIMARY_GREEN);
             pnlInfoHunian.add(lblInfo2);
+            // Sama seperti pnlMeta: tinggi mengikuti isi agar teks tidak terpotong (sebelumnya dikunci 50px).
+            pnlInfoHunian.setMaximumSize(new Dimension(Integer.MAX_VALUE, pnlInfoHunian.getPreferredSize().height));
 
             centerContent.add(pnlInfoHunian);
 

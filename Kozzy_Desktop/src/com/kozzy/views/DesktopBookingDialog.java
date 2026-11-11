@@ -194,7 +194,7 @@ public class DesktopBookingDialog extends JDialog {
         btnBatal.addActionListener(e -> dispose());
         btnRow.add(btnBatal);
 
-        PillButton btnSubmit = new PillButton("Kirim Pengajuan Booking →", PillButton.Style.PRIMARY);
+        PillButton btnSubmit = new PillButton("Kirim Pengajuan Booking", PillButton.Style.PRIMARY);
         btnSubmit.addActionListener(e -> submitBooking());
         btnRow.add(btnSubmit);
 
