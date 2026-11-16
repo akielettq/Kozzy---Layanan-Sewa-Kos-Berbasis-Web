@@ -1,0 +1,18 @@
+
+
+# Bukti pembayaran hasil upload saat pengujian/penggunaan.
+# Bukti contoh (bukti_KZ-*) dan .htaccess tetap ikut karena dipakai data contoh.
+assets/uploads/bukti/*
+!assets/uploads/bukti/.htaccess
+!assets/uploads/bukti/bukti_KZ-*
+
+# Salinan proyek lama (jangan menaruh repo di dalam repo)
+/Kozzy_php/
+/Kozzy_php_old/
+
+# Editor, sistem operasi, dan log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

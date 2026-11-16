@@ -12,6 +12,9 @@ $judulHalaman = "Kozzy — Sewa Kos Bulanan Putra & Putri Pekanbaru";
 $jmlKamar = (int)$pdo->query("SELECT COUNT(*) FROM kamar")->fetchColumn();
 $hargaTermurah = (int)$pdo->query("SELECT MIN(harga) FROM kamar")->fetchColumn();
 $jmlTersedia = (int)$pdo->query("SELECT COUNT(*) FROM kamar WHERE status = 'tersedia'")->fetchColumn();
+$jmlPerTipe = $pdo->query("SELECT tipe, COUNT(*) AS jml FROM kamar GROUP BY tipe")->fetchAll(PDO::FETCH_KEY_PAIR);
+$jmlPutra = (int)($jmlPerTipe['putra'] ?? 0);
+$jmlPutri = (int)($jmlPerTipe['putri'] ?? 0);
 
 require_once __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/includes/nav.php';
@@ -24,7 +27,7 @@ require_once __DIR__ . '/includes/nav.php';
       <h1>Cari kos nggak perlu <em>keliling kota</em> lagi.</h1>
       <p class="lede">Lihat kamar beserta fasilitasnya, booking, bayar, lalu pantau verifikasi admin secara online dari mana saja.</p>
       <div class="hero-aksi">
-        <a class="tombol hijau" href="kamar.php">Lihat Kamar (<?= $jmlTersedia ?> Tersedia) →</a>
+        <a class="tombol tera" href="kamar.php">Lihat Kamar (<?= $jmlTersedia ?> Tersedia) →</a>
       </div>
       <div class="hero-stat">
         <div><b><?= $jmlKamar ?></b><span>kamar</span></div>
@@ -41,13 +44,13 @@ require_once __DIR__ . '/includes/nav.php';
 
 <div class="wadah bagian">
   <span class="label-bagian">01 · PILIH KOS</span>
-  <h2>Gedung terpisah, privasi aman.</h2>
+  <h2>Gedung terpisah, <em>privasi aman</em>.</h2>
   <p class="sub">Dua gedung terpisah untuk pria dan wanita di Pekanbaru.</p>
   <div class="pilih-grid">
     <a class="pilih-kartu" href="kamar.php?tipe=putra">
       <img src="putra.jpg" alt="Kos Putra">
       <div class="pilih-isi">
-        <span>GEDUNG A</span>
+        <span>GEDUNG A · <?= $jmlPutra ?> KAMAR</span>
         <h3>Kos Putra</h3>
         <p>Koridor tenang, parkiran luas, dekat kampus.</p>
         <b class="tombol kecil">Lihat Kamar →</b>
@@ -56,7 +59,7 @@ require_once __DIR__ . '/includes/nav.php';
     <a class="pilih-kartu" href="kamar.php?tipe=putri">
       <img src="putri.jpg" alt="Kos Putri">
       <div class="pilih-isi">
-        <span>GEDUNG B</span>
+        <span>GEDUNG B · <?= $jmlPutri ?> KAMAR</span>
         <h3>Kos Putri</h3>
         <p>Taman belakang, CCTV di tiap lorong, suasana nyaman.</p>
         <b class="tombol kecil">Lihat Kamar →</b>
@@ -67,10 +70,10 @@ require_once __DIR__ . '/includes/nav.php';
 
 <div class="wadah bagian">
   <span class="label-bagian">02 · CARA SEWA</span>
-  <h2>Dari lihat-lihat sampai kunci di tangan.</h2>
+  <h2>Dari lihat-lihat sampai <em>kunci di tangan</em>.</h2>
   <div class="langkah-wrap">
     <div class="langkah"><b>01</b><div><h3>Pilih &amp; booking kamar</h3><p>Cek foto dan fasilitas, lalu tentukan jadwal sewamu.</p></div></div>
-    <div class="langkah"><b>02</b><div><h3>Bayar sesuai tagihan</h3><p>Transfer BCA, QRIS, atau E-Wallet, lalu unggah bukti transfer.</p></div></div>
+    <div class="langkah"><b>02</b><div><h3>Bayar sesuai tagihan</h3><p>Transfer bank, e-wallet, atau scan QRIS, lalu unggah bukti pembayaran.</p></div></div>
     <div class="langkah"><b>03</b><div><h3>Verifikasi admin</h3><p>Admin memverifikasi pembayaranmu dalam waktu singkat.</p></div></div>
     <div class="langkah"><b>04</b><div><h3>Serah terima kunci</h3><p>Ambil kunci fisik di kos dan kamarmu siap dihuni.</p></div></div>
   </div>

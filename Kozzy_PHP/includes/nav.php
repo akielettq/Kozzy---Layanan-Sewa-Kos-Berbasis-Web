@@ -15,8 +15,13 @@ $sekarang = basename($_SERVER['PHP_SELF']);
       <?php if (!$u || $u['peran'] !== 'admin'): ?>
         <a href="sewaku.php" class="<?= $sekarang == 'sewaku.php' ? 'aktif' : '' ?>">Sewaku</a>
       <?php endif; ?>
+      <?php if ($u && $u['peran'] !== 'admin'): ?>
+        <a href="keluhan.php" class="<?= $sekarang == 'keluhan.php' ? 'aktif' : '' ?>">Keluhan</a>
+      <?php endif; ?>
       <?php if ($u && $u['peran'] === 'admin'): ?>
+        <?php $keluhanBaru = isset($pdo) ? jumlahKeluhanBaru($pdo) : 0; ?>
         <a href="admin.php" class="<?= $sekarang == 'admin.php' ? 'aktif' : '' ?>">Admin</a>
+        <a href="admin_keluhan.php" class="<?= $sekarang == 'admin_keluhan.php' ? 'aktif' : '' ?>">Keluhan<?php if ($keluhanBaru > 0): ?> <span class="badge-nav" title="<?= $keluhanBaru ?> keluhan baru"><?= $keluhanBaru ?></span><?php endif; ?></a>
       <?php endif; ?>
     </nav>
     <div class="nav-user" id="navUser">

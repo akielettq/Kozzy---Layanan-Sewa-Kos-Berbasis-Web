@@ -70,6 +70,31 @@ if (!$kamar) {
     exit;
 }
 
+// 2b. Syarat data diri lengkap & tipe kos harus sesuai jenis kelamin penyewa
+$pengguna = muatPengguna($pdo, (int)$user['id_pengguna']);
+if (!dataDiriLengkap($pengguna)) {
+    setFlash("Lengkapi data diri dulu (jenis kelamin, asal daerah, dan kontak wali) sebelum booking kamar.", "kuning");
+    header("Location: profil.php?lengkapi=1&balik=" . urlencode("booking.php?kode=" . $kode));
+    exit;
+}
+
+$tipeSesuai = tipeKosUntuk($pengguna['jenis_kelamin']);
+if ($kamar['tipe'] !== $tipeSesuai) {
+    require_once __DIR__ . '/includes/header.php';
+    require_once __DIR__ . '/includes/nav.php';
+    ?>
+    <section class="wadah hal-isi">
+      <div class="panel-pesan">
+        <h2>Kamar ini khusus Kos <?= ucfirst(htmlspecialchars($kamar['tipe'])) ?></h2>
+        <p>Akunmu terdaftar sebagai <?= htmlspecialchars(opsiJenisKelamin()[$pengguna['jenis_kelamin']]) ?>, jadi kamu hanya bisa memesan kamar Kos <?= ucfirst($tipeSesuai) ?>.</p>
+        <a class="tombol hijau" href="kamar.php?tipe=<?= $tipeSesuai ?>">Lihat Kamar Kos <?= ucfirst($tipeSesuai) ?> →</a>
+      </div>
+    </section>
+    <?php
+    require_once __DIR__ . '/includes/footer.php';
+    exit;
+}
+
 // 3. Validasi Kondisi Bisnis
 $sewaAktif = punyaSewaAktif($pdo, $user['id_pengguna']);
 $adaPending = adaPendingDiKamar($pdo, $kode);
@@ -106,8 +131,26 @@ if ($kamar['status'] !== 'tersedia' || $adaPending) {
     exit;
 }
 
-// Ambil daftar metode pembayaran
+// Ambil daftar metode pembayaran, dikelompokkan per kategori (bank / ewallet / qris)
 $metodeList = $pdo->query("SELECT * FROM metode_pembayaran ORDER BY id_metode ASC")->fetchAll();
+$metodeById = [];
+$metodePerKategori = ['bank' => [], 'ewallet' => [], 'qris' => []];
+foreach ($metodeList as $m) {
+    $metodeById[(int)$m['id_metode']] = $m;
+    if (isset($metodePerKategori[$m['kategori']])) {
+        $metodePerKategori[$m['kategori']][] = $m;
+    }
+}
+
+// Kategori yang tampil terpilih: sesuai isian sebelumnya (jika validasi gagal), selain itu Transfer Bank
+$idMetodeLama = (int)($_POST['id_metode'] ?? 0);
+$kategoriAwal = $metodeById[$idMetodeLama]['kategori'] ?? 'bank';
+if (empty($metodePerKategori[$kategoriAwal])) {
+    foreach ($metodePerKategori as $kat => $isi) {
+        if (!empty($isi)) { $kategoriAwal = $kat; break; }
+    }
+}
+$durasiAwal = in_array((int)($_POST['durasi'] ?? 1), [1, 3, 6], true) ? (int)($_POST['durasi'] ?? 1) : 1;
 
 $pesanError = '';
 
@@ -127,8 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pesanError = "Pilih tanggal mulai sewa yang valid (minimal hari ini).";
         } elseif (!in_array($durasi, [1, 3, 6])) {
             $pesanError = "Durasi sewa harus 1, 3, atau 6 bulan.";
-        } elseif ($idMetode <= 0) {
-            $pesanError = "Pilih metode pembayaran terlebih dahulu.";
+        } elseif (!isset($metodeById[$idMetode])) {
+            $pesanError = "Pilih cara pembayaran beserta bank / e-wallet tujuannya terlebih dahulu.";
         } elseif (!$setuju) {
             $pesanError = "Anda harus menyetujui syarat & ketentuan sewa.";
         } else {
@@ -136,39 +179,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (adaPendingDiKamar($pdo, $kode)) {
                 $pesanError = "Kamar ini baru saja diajukan oleh pengguna lain.";
             } else {
-                // Tangani upload file bukti pembayaran jika ada
+                // Tangani upload file bukti pembayaran jika ada (divalidasi isi filenya, bukan sekadar nama)
                 $fileBuktiSimpan = null;
                 if (isset($_FILES['bukti_bayar']) && $_FILES['bukti_bayar']['error'] !== UPLOAD_ERR_NO_FILE) {
-                    if ($_FILES['bukti_bayar']['error'] !== UPLOAD_ERR_OK) {
-                        $pesanError = "Gagal mengunggah file bukti pembayaran (kode error: " . (int)$_FILES['bukti_bayar']['error'] . ").";
-                    } else {
-                        $fileTmp  = $_FILES['bukti_bayar']['tmp_name'];
-                        $fileName = $_FILES['bukti_bayar']['name'];
-                        $fileSize = $_FILES['bukti_bayar']['size'];
-                        $fileExt  = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-                        $ekstensiBoleh = ['jpg', 'jpeg', 'png', 'webp'];
-                        $maxSize = 2 * 1024 * 1024; // 2MB
-
-                        if (!in_array($fileExt, $ekstensiBoleh)) {
-                            $pesanError = "Format bukti pembayaran harus JPG, PNG, atau WEBP.";
-                        } elseif ($fileSize > $maxSize) {
-                            $pesanError = "Ukuran file bukti pembayaran maksimal 2MB.";
-                        } elseif (!validasiMimeGambar($fileTmp)) {
-                            $pesanError = "Format berkas gambar bukti pembayaran tidak valid.";
-                        } else {
-                            $namaFileBaru = "bukti_" . uniqid() . "_" . time() . "." . $fileExt;
-                            $targetDir = __DIR__ . "/assets/uploads/bukti/";
-                            if (!is_dir($targetDir)) {
-                                mkdir($targetDir, 0777, true);
-                            }
-                            $targetPath = $targetDir . $namaFileBaru;
-                            if (move_uploaded_file($fileTmp, $targetPath)) {
-                                $fileBuktiSimpan = "assets/uploads/bukti/" . $namaFileBaru;
-                            } else {
-                                $pesanError = "Gagal mengunggah file bukti pembayaran ke server.";
-                            }
-                        }
+                    [$fileBuktiSimpan, $errUpload] = simpanBuktiUpload($_FILES['bukti_bayar']);
+                    if ($errUpload !== '') {
+                        $pesanError = $errUpload;
+                        $fileBuktiSimpan = null;
                     }
                 }
 
@@ -231,17 +248,15 @@ require_once __DIR__ . '/includes/nav.php';
 
 <section class="wadah hal-isi" id="blokBooking">
   <span class="label-bagian">BOOKING</span>
-  <h1>Kunci kamarmu.</h1>
+  <h1>Kunci <em>kamarmu</em>.</h1>
+  <?= renderStepper([
+      ['status' => 'selesai',  'judul' => 'Pilih kamar',  'ket' => 'Kamar ' . $kamar['kode_kamar']],
+      ['status' => 'sekarang', 'judul' => 'Isi data & bayar', 'ket' => 'Kamu di sini'],
+      ['status' => 'menunggu', 'judul' => 'Verifikasi admin', 'ket' => 'Setelah dikirim'],
+  ], 'stepper-booking') ?>
 
-  <!-- Ringkasan Kamar -->
-  <div id="infoKamarBooking" class="panel ringkasan">
-    <img src="kamar/<?= htmlspecialchars($kamar['kode_kamar']) ?>.jpg" onerror="this.onerror=null; this.src='<?= $kamar['tipe'] === 'putra' ? 'putra.jpg' : 'putri.jpg' ?>';" alt="Kamar <?= htmlspecialchars($kamar['kode_kamar']) ?>">
-    <div>
-      <b style="font-size:18px">Kamar <?= htmlspecialchars($kamar['kode_kamar']) ?></b>
-      <div class="ket">Kos <?= ucfirst($kamar['tipe']) ?> · <?= htmlspecialchars($kamar['daftar_fasilitas']) ?></div>
-      <div class="harga"><?= rupiah($kamar['harga']) ?> <small>/bulan</small></div>
-    </div>
-  </div>
+  <div class="booking-grid">
+  <div class="booking-utama">
 
   <?php if (!empty($pesanError)): ?>
     <div class="pesan gagal" style="margin-bottom:16px;">
@@ -267,18 +282,66 @@ require_once __DIR__ . '/includes/nav.php';
 
     <div class="total-bar">
       <span>TOTAL BAYAR</span>
-      <b id="totalHarga"><?= rupiah($kamar['harga'] * (int)($_POST['durasi'] ?? 1)) ?></b>
+      <b id="totalHarga"><?= rupiah($kamar['harga'] * $durasiAwal) ?></b>
     </div>
 
     <h3>Pembayaran</h3>
-    <?php foreach ($metodeList as $m): ?>
-      <label class="pilihan">
-        <input type="radio" name="id_metode" value="<?= $m['id_metode'] ?>" onchange="pilihMetode('<?= htmlspecialchars($m['nama_metode']) ?>')" <?= (($_POST['id_metode'] ?? 1) == $m['id_metode']) ? 'checked' : '' ?> required>
-        <?= htmlspecialchars($m['nama_metode']) ?> — <?= htmlspecialchars($m['nomor_tujuan']) ?>
-      </label>
+    <label>Cara pembayaran</label>
+    <div class="kategori-bayar" role="radiogroup" aria-label="Cara pembayaran">
+      <?php foreach (infoKategoriBayar() as $kat => [$judulKat, $ketKat]):
+        if (empty($metodePerKategori[$kat])) continue; ?>
+        <label class="kat-kartu <?= $kat === $kategoriAwal ? 'aktif' : '' ?>">
+          <input type="radio" name="kategori_bayar" value="<?= $kat ?>" onchange="pilihKategoriBayar('<?= $kat ?>')" <?= $kat === $kategoriAwal ? 'checked' : '' ?>>
+          <b><?= htmlspecialchars($judulKat) ?></b>
+          <small><?= htmlspecialchars($ketKat) ?></small>
+        </label>
+      <?php endforeach; ?>
+    </div>
+
+    <?php
+    // Transfer Bank & E-Wallet: dropdown pilihan, rincian tujuan muncul setelah dipilih
+    $panelPilihan = [
+        'bank'    => ['panelBank',    'selBank',    'detailBank',    'Pilih bank tujuan',    '— Pilih bank —'],
+        'ewallet' => ['panelEwallet', 'selEwallet', 'detailEwallet', 'Pilih e-wallet tujuan', '— Pilih e-wallet —'],
+    ];
+    foreach ($panelPilihan as $kat => [$idPanel, $idSel, $idDetail, $labelSel, $placeholder]):
+        if (empty($metodePerKategori[$kat])) continue;
+        $aktif = ($kat === $kategoriAwal);
+    ?>
+      <div class="panel-bayar" id="<?= $idPanel ?>" style="<?= $aktif ? '' : 'display:none' ?>">
+        <label for="<?= $idSel ?>"><?= htmlspecialchars($labelSel) ?></label>
+        <select id="<?= $idSel ?>" name="id_metode" class="masukan pilih-penuh" onchange="pilihRekening(this, '<?= $idDetail ?>')" required <?= $aktif ? '' : 'disabled' ?>>
+          <option value=""><?= htmlspecialchars($placeholder) ?></option>
+          <?php foreach ($metodePerKategori[$kat] as $m): ?>
+            <option value="<?= (int)$m['id_metode'] ?>"
+                    data-nama="<?= htmlspecialchars($m['nama_metode']) ?>"
+                    data-tujuan="<?= htmlspecialchars($m['nomor_tujuan']) ?>"
+                    <?= $idMetodeLama === (int)$m['id_metode'] ? 'selected' : '' ?>><?= htmlspecialchars(namaPendekMetode($m['nama_metode'])) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <div class="detail-bayar" id="<?= $idDetail ?>" style="display:none"></div>
+      </div>
     <?php endforeach; ?>
-    
-    <p id="infoBayar" class="info-bayar" style="display:none"></p>
+
+    <?php if (!empty($metodePerKategori['qris'])):
+        $metodeQris = $metodePerKategori['qris'][0];
+        $aktifQris = ($kategoriAwal === 'qris');
+    ?>
+      <!-- QRIS: gambar contoh (dummy). Ganti assets/qris_dummy.png dengan QRIS asli saat dipakai sungguhan. -->
+      <div class="panel-bayar" id="panelQris" style="<?= $aktifQris ? '' : 'display:none' ?>">
+        <div class="qris-kotak">
+          <img src="assets/qris_dummy.png" alt="Kode QRIS Kos Kozzy (contoh)">
+          <div class="qris-teks">
+            <span class="badge-dummy">QRIS DUMMY</span>
+            <p><b>Scan kode QR ini untuk membayar</b></p>
+            <p class="ket"><?= htmlspecialchars($metodeQris['nomor_tujuan']) ?></p>
+            <p>Nominal: <b class="nominal-bayar"><?= rupiah($kamar['harga'] * $durasiAwal) ?></b></p>
+            <p class="ket">Kode ini hanya contoh untuk demo sistem dan tidak dapat dipakai membayar sungguhan.</p>
+          </div>
+        </div>
+        <input type="hidden" id="inQris" name="id_metode" value="<?= (int)$metodeQris['id_metode'] ?>" <?= $aktifQris ? '' : 'disabled' ?>>
+      </div>
+    <?php endif; ?>
 
     <label for="fBukti">Unggah bukti pembayaran (struk / screenshot transfer)</label>
     <input type="file" id="fBukti" name="bukti_bayar" class="masukan" accept="image/*" onchange="pilihBukti(this)">
@@ -290,10 +353,49 @@ require_once __DIR__ . '/includes/nav.php';
     </label>
 
     <div style="margin-top:16px;">
-      <button type="submit" class="tombol hijau">Kirim &amp; Minta Verifikasi →</button>
+      <button type="submit" class="tombol tera">Kirim &amp; Minta Verifikasi →</button>
       <a class="tombol" href="kamar.php">Batal</a>
     </div>
   </form>
+  </div><!-- /booking-utama -->
+
+  <?php
+    $fotoBooking = fotoKamar($kamar['kode_kamar'], $kamar['tipe']);
+    $tingkatBooking = tingkatKamar($kamar['daftar_fasilitas']);
+    $tglAwal = (isset($_POST['tanggal_mulai']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['tanggal_mulai'])) ? $_POST['tanggal_mulai'] : date('Y-m-d');
+  ?>
+  <aside id="infoKamarBooking" class="panel ringkasan-sticky" aria-label="Ringkasan booking">
+    <img class="rb-foto" src="<?= htmlspecialchars($fotoBooking[0]) ?>" onerror="this.onerror=null; this.src='<?= $kamar['tipe'] === 'putra' ? 'putra.jpg' : 'putri.jpg' ?>';" alt="Kamar <?= htmlspecialchars($kamar['kode_kamar']) ?>">
+    <div class="rb-isi">
+      <div class="rb-judul"><b>Kamar <?= htmlspecialchars($kamar['kode_kamar']) ?></b> <span class="tingkat t-<?= $tingkatBooking[0] ?>"><?= $tingkatBooking[1] ?></span></div>
+      <div class="ket">Kos <?= ucfirst($kamar['tipe']) ?></div>
+      <div class="tag-fas">
+        <?php foreach (tagFasilitas($kamar['daftar_fasilitas']) as $tg): ?><span><?= ikonFasilitas($tg) ?><?= htmlspecialchars($tg) ?></span><?php endforeach; ?>
+      </div>
+      <dl class="rb-baris">
+        <div><dt>Harga</dt><dd><?= rupiah($kamar['harga']) ?> /bulan</dd></div>
+        <div><dt>Mulai</dt><dd id="rbMulai"><?= formatTanggal($tglAwal) ?></dd></div>
+        <div><dt>Durasi</dt><dd id="rbDurasi"><?= $durasiAwal ?> bulan</dd></div>
+        <div><dt>Sampai</dt><dd id="rbSampai"><?= formatTanggal(tambahBulan($tglAwal, $durasiAwal)) ?></dd></div>
+        <div><dt>Pembayaran</dt><dd id="rbMetode">Belum dipilih</dd></div>
+      </dl>
+      <div class="rb-total"><span>TOTAL BAYAR</span><b class="nominal-bayar"><?= rupiah($kamar['harga'] * $durasiAwal) ?></b></div>
+    </div>
+  </aside>
+  </div><!-- /booking-grid -->
 </section>
+
+<script>
+// Sinkronkan tampilan pembayaran dengan pilihan awal (penting saat form dimuat ulang setelah error)
+document.addEventListener('DOMContentLoaded', function () {
+  var radio = document.querySelector('input[name="kategori_bayar"]:checked');
+  pilihKategoriBayar(radio ? radio.value : 'bank');
+  var pasangan = [['selBank', 'detailBank'], ['selEwallet', 'detailEwallet']];
+  pasangan.forEach(function (p) {
+    var sel = document.getElementById(p[0]);
+    if (sel && sel.value !== '') pilihRekening(sel, p[1]);
+  });
+});
+</script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
