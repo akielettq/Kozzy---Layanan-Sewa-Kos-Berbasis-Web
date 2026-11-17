@@ -336,16 +336,15 @@ require_once __DIR__ . '/includes/nav.php';
         $metodeQris = $metodePerKategori['qris'][0];
         $aktifQris = ($kategoriAwal === 'qris');
     ?>
-      <!-- QRIS: gambar contoh (dummy). Ganti assets/qris_dummy.png dengan QRIS asli saat dipakai sungguhan. -->
+      <!-- QRIS -->
       <div class="panel-bayar" id="panelQris" style="<?= $aktifQris ? '' : 'display:none' ?>">
         <div class="qris-kotak">
-          <img src="assets/qris_dummy.png" alt="Kode QRIS Kos Kozzy (contoh)">
+          <img src="assets/qris.jpeg" alt="Kode QRIS Kos Kozzy (contoh)">
           <div class="qris-teks">
-            <span class="badge-dummy">QRIS DUMMY</span>
+            <span class="badge-dummy">QRIS</span>
             <p><b>Scan kode QR ini untuk membayar</b></p>
             <p class="ket"><?= htmlspecialchars($metodeQris['nomor_tujuan']) ?></p>
             <p>Nominal: <b class="nominal-bayar"><?= rupiah($kamar['harga'] * $durasiAwal) ?></b></p>
-            <p class="ket">Kode ini hanya contoh untuk demo sistem dan tidak dapat dipakai membayar sungguhan.</p>
           </div>
         </div>
         <input type="hidden" id="inQris" name="id_metode" value="<?= (int)$metodeQris['id_metode'] ?>" <?= $aktifQris ? '' : 'disabled' ?>>
