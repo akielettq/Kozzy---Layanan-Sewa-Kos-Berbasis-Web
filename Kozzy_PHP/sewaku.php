@@ -21,12 +21,40 @@ if ($user['peran'] === 'admin') {
 
 $judulHalaman = "Sewaku — Kozzy";
 
+// ====== PEMBATALAN PENGAJUAN OLEH PENYEWA (POST) ======
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'batal') {
+    if (!validasiCsrf($_POST['csrf_token'] ?? '')) {
+        setFlash("Validasi keamanan sesi kedaluwarsa. Silakan muat ulang halaman.", "merah");
+    } else {
+        $idBatal = trim($_POST['id_booking'] ?? '');
+        // Hanya pengajuan milik sendiri yang masih menunggu verifikasi yang bisa dibatalkan
+        $stmtBatal = $pdo->prepare("
+            UPDATE booking SET status = 'cancelled', alasan = 'Dibatalkan oleh penyewa.'
+            WHERE id_booking = ? AND id_pengguna = ? AND status = 'pending'
+        ");
+        $stmtBatal->execute([$idBatal, $user['id_pengguna']]);
+        if ($stmtBatal->rowCount() === 1) {
+            setFlash("Pengajuan $idBatal dibatalkan. Kamar kembali tersedia untuk penyewa lain.", "hijau");
+        } else {
+            setFlash("Pengajuan tidak bisa dibatalkan, kemungkinan sudah diproses admin.", "kuning");
+        }
+    }
+    header("Location: sewaku.php");
+    exit;
+}
+
 // 2. Ambil seluruh riwayat booking milik pengguna
 $stmt = $pdo->prepare("
     SELECT b.*, 
            k.tipe AS tipe_kamar, k.harga, k.terisi_hingga,
+           (b.status = 'approved' AND k.status = 'terisi' AND b.tanggal_mulai <= CURDATE()
+            AND DATE_ADD(b.tanggal_mulai, INTERVAL b.durasi MONTH) >= CURDATE()) AS berjalan,
+           DATE_ADD(b.tanggal_mulai, INTERVAL b.durasi MONTH) AS akhir_sewa,
+           (b.tanggal_mulai > CURDATE()) AS belum_mulai,
+           (DATE_ADD(b.tanggal_mulai, INTERVAL b.durasi MONTH) < CURDATE()) AS sudah_berakhir,
            m.nama_metode,
-           bp.file_bukti
+           bp.file_bukti,
+           TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(b.created_at, INTERVAL " . (int)BATAS_JAM_PENGAJUAN . " HOUR)) AS sisa_menit
     FROM booking b
     JOIN kamar k ON b.kode_kamar = k.kode_kamar
     JOIN metode_pembayaran m ON b.id_metode = m.id_metode
@@ -40,7 +68,9 @@ $bookingList = $stmt->fetchAll();
 $infoStatus = [
     'pending'  => ['kuning', 'Menunggu Verifikasi'],
     'approved' => ['hijau',  'Disetujui'],
-    'rejected' => ['merah',  'Ditolak']
+    'rejected' => ['merah',  'Ditolak'],
+    'cancelled' => ['abu',   'Dibatalkan'],
+    'expired'  => ['abu',    'Kedaluwarsa']
 ];
 
 require_once __DIR__ . '/includes/header.php';
@@ -69,6 +99,8 @@ require_once __DIR__ . '/includes/nav.php';
         </div>
 
         <h2>Kamar <?= htmlspecialchars($b['kode_kamar']) ?> — Kos <?= ucfirst($b['tipe_kamar']) ?></h2>
+
+        <?= renderStepper(tahapanSewa($b)) ?>
         
         <div class="info-grid">
           <div>
@@ -99,12 +131,31 @@ require_once __DIR__ . '/includes/nav.php';
 
         <?php if ($b['status'] === 'pending'): ?>
           <div class="pesan tunggu">
-            <b>Menunggu verifikasi admin.</b> Pembayaranmu sudah masuk antrean — biasanya diverifikasi dalam waktu kurang dari 1×24 jam.
+            <b>Menunggu verifikasi admin.</b> Pengajuan otomatis kedaluwarsa jika belum diverifikasi dalam <?= (int)BATAS_JAM_PENGAJUAN ?> jam (sisa waktu: <?= labelSisaWaktu((int)$b['sisa_menit']) ?>).
           </div>
+          <form method="POST" action="sewaku.php" style="margin-top:10px;" onsubmit="return confirm('Batalkan pengajuan <?= htmlspecialchars($b['id_booking']) ?> untuk Kamar <?= htmlspecialchars($b['kode_kamar']) ?>?')">
+            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+            <input type="hidden" name="aksi" value="batal">
+            <input type="hidden" name="id_booking" value="<?= htmlspecialchars($b['id_booking']) ?>">
+            <button type="submit" class="tombol kecil merah">Batalkan Pengajuan</button>
+          </form>
         <?php elseif ($b['status'] === 'approved'): ?>
           <div class="pesan sukses">
             <b>Selamat, kamarmu aktif!</b> Terisi atas nama kamu sampai <?= formatTanggal($b['terisi_hingga']) ?>.
           </div>
+          <?php if (!empty($b['berjalan'])): ?>
+            <a class="tombol kecil" href="keluhan.php" style="margin-top:10px;display:inline-block;">Ada masalah? Lapor Keluhan →</a>
+          <?php endif; ?>
+        <?php elseif ($b['status'] === 'cancelled'): ?>
+          <div class="pesan netral">
+            <b>Pengajuan dibatalkan.</b> Kamu membatalkan pengajuan ini, jadi kamar sudah kembali tersedia.
+          </div>
+          <a class="tombol kecil" href="kamar.php" style="margin-top:10px;display:inline-block;">Cari Kamar →</a>
+        <?php elseif ($b['status'] === 'expired'): ?>
+          <div class="pesan netral">
+            <b>Pengajuan kedaluwarsa.</b> Pengajuan tidak diverifikasi dalam <?= (int)BATAS_JAM_PENGAJUAN ?> jam sehingga ditutup otomatis. Kamu bisa mengajukan lagi kapan saja.
+          </div>
+          <a class="tombol kecil" href="kamar.php" style="margin-top:10px;display:inline-block;">Ajukan Lagi →</a>
         <?php elseif ($b['status'] === 'rejected'): ?>
           <div class="pesan gagal">
             <b>Ditolak admin.</b> Alasan: <?= htmlspecialchars($b['alasan'] ?: 'Data pembayaran tidak sesuai.') ?>
