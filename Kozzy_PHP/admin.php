@@ -41,6 +41,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $aksi = $_POST['aksi'] ?? '';
 
+    // 0. RESET PASSWORD PENGHUNI (pengganti "lupa password": admin membuat password sementara)
+    if ($aksi === 'reset_password') {
+        $idTarget = (int)($_POST['id_pengguna'] ?? 0);
+        $stmtU = $pdo->prepare("SELECT id_pengguna, nama, email FROM pengguna WHERE id_pengguna = ? AND peran = 'pencari'");
+        $stmtU->execute([$idTarget]);
+        $target = $stmtU->fetch();
+        if (!$target) {
+            setFlash("Penghuni tidak ditemukan.", "kuning");
+        } else {
+            $sandiSementara = substr(bin2hex(random_bytes(4)), 0, 8);
+            $pdo->prepare("UPDATE pengguna SET password = ? WHERE id_pengguna = ?")->execute([$sandiSementara, $idTarget]);
+            // Ditampilkan sekali saja di halaman admin, lalu dihapus dari sesi
+            $_SESSION['info_reset'] = ['nama' => $target['nama'], 'email' => $target['email'], 'sandi' => $sandiSementara];
+        }
+        header("Location: admin.php#reset-password");
+        exit;
+    }
+
     // A. SETUJUI BOOKING
     if ($aksi === 'approve') {
         $idBooking = trim($_POST['id_booking'] ?? '');
@@ -158,9 +176,11 @@ $totalPending  = (int)$pdo->query("SELECT COUNT(*) FROM booking WHERE status = '
 $stmtPending = $pdo->query("
     SELECT b.*, 
            u.nama AS nama_penyewa, u.email AS email_penyewa, u.no_telepon,
-           k.harga,
+           u.jenis_kelamin, u.asal_daerah, u.status_penghuni, u.instansi, u.nama_wali, u.no_hp_wali,
+           k.harga, k.tipe AS tipe_kamar,
            m.nama_metode,
-           bp.file_bukti
+           bp.file_bukti,
+           TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(b.created_at, INTERVAL " . (int)BATAS_JAM_PENGAJUAN . " HOUR)) AS sisa_menit
     FROM booking b
     JOIN pengguna u ON b.id_pengguna = u.id_pengguna
     JOIN kamar k ON b.kode_kamar = k.kode_kamar
@@ -186,13 +206,20 @@ $stmtKeputusan = $pdo->query("
 ");
 $keputusanList = $stmtKeputusan->fetchAll();
 
+// Penghuni (pencari kos) untuk fitur reset password, dan info password sementara yang baru dibuat
+$penghuniList = $pdo->query("SELECT id_pengguna, nama, email FROM pengguna WHERE peran = 'pencari' ORDER BY nama ASC")->fetchAll();
+$infoReset = $_SESSION['info_reset'] ?? null;
+unset($_SESSION['info_reset']);
+
 // Daftar Seluruh Kamar (Urutkan yang belum terisi di atas, terisi di bawah)
 $kamarAll = $pdo->query("SELECT * FROM kamar ORDER BY (status = 'terisi') ASC, kode_kamar ASC")->fetchAll();
 
 $infoStatus = [
     'pending'  => ['kuning', 'Menunggu'],
     'approved' => ['hijau',  'Disetujui'],
-    'rejected' => ['merah',  'Ditolak']
+    'rejected' => ['merah',  'Ditolak'],
+    'cancelled' => ['abu',   'Dibatalkan'],
+    'expired'  => ['abu',    'Kedaluwarsa']
 ];
 
 require_once __DIR__ . '/includes/header.php';
@@ -210,6 +237,7 @@ require_once __DIR__ . '/includes/nav.php';
     <div><b><?= $kamarTersedia ?></b><span>tersedia</span></div>
     <div><b><?= $kamarTerisi ?></b><span>terisi</span></div>
     <div><b><?= $totalPending ?></b><span>menunggu</span></div>
+    <div><b><?= jumlahKeluhanBaru($pdo) ?></b><span>keluhan baru</span></div>
   </div>
 
   <!-- 1. Antrean Pengajuan Pending -->
@@ -223,6 +251,25 @@ require_once __DIR__ . '/includes/nav.php';
           <b><?= htmlspecialchars($p['nama_penyewa']) ?></b>
           <div class="muted">
             <?= htmlspecialchars($p['email_penyewa']) ?> · No. WA: <?= htmlspecialchars($p['no_telepon']) ?> · Kamar <?= htmlspecialchars($p['kode_kamar']) ?> (<?= rupiah($p['harga']) ?>/bln)
+          </div>
+          <div class="muted">
+            <?= htmlspecialchars(opsiJenisKelamin()[$p['jenis_kelamin'] ?? ''] ?? 'Jenis kelamin belum diisi') ?>
+            · Asal: <?= htmlspecialchars($p['asal_daerah'] ?: '—') ?>
+            <?php if (!empty($p['status_penghuni'])): ?>
+              · <?= htmlspecialchars(opsiStatusPenghuni()[$p['status_penghuni']] ?? '') ?><?= !empty($p['instansi']) ? ' di ' . htmlspecialchars($p['instansi']) : '' ?>
+            <?php endif; ?>
+          </div>
+          <div class="muted">
+            Wali: <?= htmlspecialchars($p['nama_wali'] ?: '—') ?> (<?= htmlspecialchars($p['no_hp_wali'] ?: '—') ?>)
+          </div>
+          <?php $tipeSeharusnya = tipeKosUntuk($p['jenis_kelamin'] ?? null);
+                if ($tipeSeharusnya !== null && $tipeSeharusnya !== $p['tipe_kamar']): ?>
+            <div class="muted" style="color:#B5431C;">
+              <b>Perhatian:</b> penyewa berjenis kelamin <?= htmlspecialchars(strtolower(opsiJenisKelamin()[$p['jenis_kelamin']])) ?>, tetapi kamar ini Kos <?= ucfirst(htmlspecialchars($p['tipe_kamar'])) ?>.
+            </div>
+          <?php endif; ?>
+          <div class="muted">
+            Kedaluwarsa otomatis dalam <b><?= labelSisaWaktu((int)$p['sisa_menit']) ?></b> jika belum diputuskan.
           </div>
           <div class="muted">
             <b><?= htmlspecialchars($p['id_booking']) ?></b> · Mulai <?= formatTanggal($p['tanggal_mulai']) ?> · <?= (int)$p['durasi'] ?> bulan · via <?= htmlspecialchars($p['nama_metode']) ?>
@@ -261,7 +308,7 @@ require_once __DIR__ . '/includes/nav.php';
           <div class="muted">
             <?= htmlspecialchars($k2['nama_penyewa']) ?> · Mulai <?= formatTanggal($k2['tanggal_mulai']) ?> · <?= (int)$k2['durasi'] ?> bln
             <?php if (!empty($k2['alasan'])): ?>
-              · <span style="color:#d9534f">alasan tolak: <?= htmlspecialchars($k2['alasan']) ?></span>
+              · <span style="color:#d9534f"><?= $k2['status'] === 'rejected' ? 'alasan tolak' : 'keterangan' ?>: <?= htmlspecialchars($k2['alasan']) ?></span>
             <?php endif; ?>
           </div>
         </div>
@@ -270,9 +317,32 @@ require_once __DIR__ . '/includes/nav.php';
     <?php endforeach; ?>
   <?php endif; ?>
 
+  <!-- Reset Password Penghuni -->
+  <h2 class="judul-admin" id="reset-password" style="margin-top:32px;">Reset Password Penghuni</h2>
+  <p class="sub">Untuk penghuni yang lupa password: buat password sementara, sampaikan langsung, lalu minta penghuni menggantinya di halaman Profil.</p>
+  <?php if ($infoReset): ?>
+    <div class="pesan sukses" style="margin-bottom:12px;">
+      Password sementara untuk <b><?= htmlspecialchars($infoReset['nama']) ?></b> (<?= htmlspecialchars($infoReset['email']) ?>):
+      <code style="font-size:18px;font-weight:700;margin-left:6px;"><?= htmlspecialchars($infoReset['sandi']) ?></code>
+      <div class="ket" style="margin-top:6px;">Catat sekarang, password ini hanya ditampilkan sekali.</div>
+    </div>
+  <?php endif; ?>
+  <form method="POST" action="admin.php" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;" onsubmit="return confirm('Reset password penghuni ini? Password lamanya tidak berlaku lagi.')">
+    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+    <input type="hidden" name="aksi" value="reset_password">
+    <select name="id_pengguna" id="selReset" class="masukan pilih-penuh" style="max-width:380px;" required>
+      <option value="">— Pilih penghuni —</option>
+      <?php foreach ($penghuniList as $ph): ?>
+        <option value="<?= (int)$ph['id_pengguna'] ?>"><?= htmlspecialchars($ph['nama']) ?> (<?= htmlspecialchars($ph['email']) ?>)</option>
+      <?php endforeach; ?>
+    </select>
+    <button type="submit" class="tombol kecil merah">Reset Password</button>
+  </form>
+
   <!-- 3. Status Kamar -->
   <h2 class="judul-admin" style="margin-top:32px;">Status Kamar</h2>
-  <p class="sub"><a class="tombol kecil hijau" href="admin_kamar.php">Kelola Kamar (Tambah / Edit / Hapus)</a></p>
+  <p class="sub"><a class="tombol kecil hijau" href="admin_kamar.php">Kelola Kamar (Tambah / Edit / Hapus)</a>
+    <a class="tombol kecil hijau" href="admin_keluhan.php">Keluhan Penghuni</a></p>
   <?php foreach ($kamarAll as $k): 
     $sedangTerisi = ($k['status'] === 'terisi');
   ?>
