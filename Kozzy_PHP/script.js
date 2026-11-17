@@ -1,4 +1,10 @@
-// ====== MODAL HELPERS ======
+/* ============================================
+   KOZZY — script.js
+   Frontend UI Helpers (Modal, Toast, Booking Form)
+   Semua data dan sesi kini dikelola oleh PHP & MySQL.
+============================================ */
+
+// ====== 1. MODAL HELPERS ======
 function tutupModal(id) {
   var el = document.getElementById(id);
   if (el != null) el.classList.remove("tampil");
@@ -20,7 +26,7 @@ function lihatBukti(srcGambar) {
   }
 }
 
-// ====== TOAST NOTIFICATION ======
+// ====== 2. TOAST NOTIFICATION ======
 function toast(pesan) {
   var wrap = document.getElementById("toastWrap");
   if (wrap == null) {
@@ -37,7 +43,7 @@ function toast(pesan) {
   }, 3200);
 }
 
-// ====== HELPER FORM BOOKING ======
+// ====== 3. HELPER FORM BOOKING ======
 function hitungTotal() {
   var elHarga = document.getElementById("hargaKamarPerBulan");
   var elDurasi = document.getElementById("fDurasi");
@@ -45,25 +51,68 @@ function hitungTotal() {
 
   if (elHarga != null && elDurasi != null) {
     var harga = Number(elHarga.value);
-    var durasi = Number(elDurasi.value);
+    var durasi = ambilDurasi();
     var total = harga * durasi;
     var teks = "Rp " + total.toLocaleString("id-ID");
     if (elTotal != null) elTotal.textContent = teks;
 
+    // Nominal yang sama juga tampil di rincian pembayaran (bank / e-wallet / QRIS)
     var daftarNominal = document.querySelectorAll(".nominal-bayar");
     for (var i = 0; i < daftarNominal.length; i++) {
       daftarNominal[i].textContent = teks;
     }
   }
   perbaruiRingkasanBooking();
+  tandaiChipDurasi();
 }
 
+// ====== DURASI SEWA BEBAS (angka + tombol - / + + pilihan cepat) ======
+function ambilDurasi() {
+  var el = document.getElementById("fDurasi");
+  if (!el) return 1;
+  var min = Number(el.min) || 1, maks = Number(el.max) || 24;
+  var n = Math.round(parseFloat(el.value));   // 2.7 -> 3
+  if (isNaN(n)) n = min;
+  return Math.min(Math.max(n, min), maks);
+}
+
+// "3 bulan", "12 bulan (1 tahun)", "18 bulan (1 tahun 6 bln)" (sama dengan labelDurasiBulan di PHP)
+function labelDurasiJs(n) {
+  if (n < 12) return n + " bulan";
+  var tahun = Math.floor(n / 12), sisa = n % 12;
+  return n + " bulan (" + tahun + " tahun" + (sisa > 0 ? " " + sisa + " bln" : "") + ")";
+}
+
+function tandaiChipDurasi() {
+  var n = ambilDurasi();
+  var chip = document.querySelectorAll(".durasi-cepat .chip");
+  for (var i = 0; i < chip.length; i++) {
+    chip[i].classList.toggle("aktif", Number(chip[i].getAttribute("data-bulan")) === n);
+  }
+}
+
+function setDurasi(n) {
+  var el = document.getElementById("fDurasi");
+  if (!el) return;
+  var min = Number(el.min) || 1, maks = Number(el.max) || 24;
+  el.value = Math.min(Math.max(Math.round(n), min), maks);
+  hitungTotal();
+}
+
+function ubahDurasi(selisih) {
+  var el = document.getElementById("fDurasi");
+  if (!el) return;
+  setDurasi(ambilDurasi() + selisih);
+}
+
+// Ringkasan booking (kartu menempel di sisi): tanggal mulai, durasi, sampai kapan, dan metode terpilih
 var BULAN_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
 function formatTglId(d) {
   return d.getDate() + " " + BULAN_ID[d.getMonth()] + " " + d.getFullYear();
 }
 
+// Sama dengan DATE_ADD(... INTERVAL n MONTH) di MySQL: hari yang tidak ada di bulan tujuan dipangkas ke hari terakhir bulan itu
 function tambahBulanJs(d, n) {
   var hari = d.getDate();
   var h = new Date(d.getFullYear(), d.getMonth() + n, 1);
@@ -82,8 +131,8 @@ function perbaruiRingkasanBooking() {
   var elSampai = document.getElementById("rbSampai");
   var elMetode = document.getElementById("rbMetode");
 
-  var n = dur ? Number(dur.value) : 1;
-  if (elDurasi) elDurasi.textContent = n + " bulan";
+  var n = dur ? ambilDurasi() : 1;
+  if (elDurasi) elDurasi.textContent = labelDurasiJs(n);
 
   var bagian = tgl && tgl.value ? tgl.value.split("-") : null;
   if (bagian && bagian.length === 3) {
@@ -105,7 +154,8 @@ function perbaruiRingkasanBooking() {
   }
 }
 
-// Kategori pembayaran: bank / ewallet / qris
+// Kategori pembayaran: bank / ewallet / qris. Hanya kontrol milik kategori aktif yang
+// diaktifkan (name="id_metode"), sehingga hanya satu id_metode yang terkirim ke server.
 var PANEL_BAYAR = { bank: "panelBank", ewallet: "panelEwallet", qris: "panelQris" };
 var KONTROL_BAYAR = { bank: "selBank", ewallet: "selEwallet", qris: "inQris" };
 
@@ -165,7 +215,8 @@ function pilihBukti(input) {
   }
 }
 
-// ====== HELPER DETAIL KAMAR ======
+// ====== 4. HELPER DETAIL KAMAR ======
+// ====== GALERI FOTO (modal detail kamar) ======
 var galeriFoto = [];
 var galeriIdx = 0;
 var galeriFallback = "putra.jpg";
@@ -175,7 +226,8 @@ function tampilFotoGaleri() {
   if (!img) return;
   var jml = galeriFoto.length;
 
-
+  // Pudar sebentar saat berganti foto. Dilewati jika fotonya sama (tidak ada event load baru),
+  // dan ada pengaman waktu agar foto tidak pernah tertahan pudar.
   var ganti = img.getAttribute("src") !== galeriFoto[galeriIdx];
   if (ganti) img.classList.add("muat");
   img.onload = function () { this.classList.remove("muat"); };
@@ -210,6 +262,7 @@ function geserFoto(arah) {
   tampilFotoGaleri();
 }
 
+// Geser dengan jari (HP) dan tombol panah keyboard; Esc menutup modal
 (function () {
   var mulaiX = null;
   document.addEventListener("touchstart", function (e) {
@@ -223,11 +276,16 @@ function geserFoto(arah) {
     mulaiX = null;
   }, { passive: true });
   document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      // Esc menutup modal mana pun yang sedang terbuka (detail kamar, bukti pembayaran, dll.)
+      var terbuka = document.querySelectorAll(".modal.tampil");
+      for (var i = 0; i < terbuka.length; i++) terbuka[i].classList.remove("tampil");
+      return;
+    }
     var m = document.getElementById("modalDetail");
     if (!m || !m.classList.contains("tampil")) return;
     if (e.key === "ArrowLeft") geserFoto(-1);
     else if (e.key === "ArrowRight") geserFoto(1);
-    else if (e.key === "Escape") tutupModal("modalDetail");
   });
 })();
 
@@ -235,6 +293,7 @@ function bukaDetailKamar(k) {
   var modal = document.getElementById("modalDetail");
   if (!modal) return;
 
+  // Galeri foto: daftar foto dari server (utama + tambahan); jika tidak ada, pakai pola nama lama
   galeriFoto = (k.foto && k.foto.length) ? k.foto : ["kamar/" + k.kode_kamar + ".jpg"];
   galeriIdx = 0;
   galeriFallback = k.tipe === "putra" ? "putra.jpg" : "putri.jpg";
@@ -275,7 +334,7 @@ function bukaDetailKamar(k) {
   modal.classList.add("tampil");
 }
 
-// ====== HELPER TAB LOGIN ======
+// ====== 5. HELPER TAB LOGIN ======
 function gantiTab(tab) {
   var lagiMasuk = tab == "masuk";
   var fMasuk = document.getElementById("formMasuk");
@@ -291,14 +350,15 @@ function gantiTab(tab) {
   if (tDaftar) tDaftar.className = lagiMasuk ? "" : "aktif";
   if (jAuth) jAuth.textContent = lagiMasuk ? "Masuk ke Kozzy" : "Buat akun baru";
   if (sAuth) sAuth.textContent = lagiMasuk ? "Masuk dulu untuk bisa booking kamar." : "Daftar sekali, lalu booking kamar kapan saja.";
-
+  // Form daftar lebih panjang (2 kolom), jadi kartunya dilebarkan hanya di tab Daftar
   var kartu = document.getElementById("kartuAuth");
   if (kartu) kartu.style.maxWidth = lagiMasuk ? "480px" : "600px";
 }
 
-// ====== HELPER FORM DATA DIRI ======
+// ====== 6. HELPER FORM DATA DIRI ======
+// Label & placeholder isian instansi menyesuaikan status (mahasiswa / pekerja / lainnya)
 function gantiLabelInstansi() {
-
+  // Status bisa berupa pilihan segmen (form daftar) atau dropdown (form profil)
   var radio = document.querySelector('input[name="status_penghuni"]:checked');
   var select = document.getElementById("profStatus");
   var nilai = radio ? radio.value : (select ? select.value : "");
@@ -317,6 +377,7 @@ function gantiLabelInstansi() {
   input.placeholder = pilih[1];
 }
 
+// Tampilkan / sembunyikan isi kolom password & ulangi password di form daftar
 function tampilSandi(tampil) {
   var ids = ["daftarSandi", "daftarSandi2"];
   for (var i = 0; i < ids.length; i++) {
@@ -326,11 +387,12 @@ function tampilSandi(tampil) {
 }
 
 
-// ====== GERAK HALUS ======
+// ====== 7. GERAK HALUS ======
 function kurangiGerak() {
   return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
 
+// Kartu di bawah layar muncul pelan saat di-scroll. Yang sudah terlihat saat halaman dibuka tidak disentuh (tanpa kedip).
 function aktifkanReveal() {
   if (!("IntersectionObserver" in window) || kurangiGerak()) return;
   var daftar = document.querySelectorAll(".kartu-kamar, .langkah, .pilih-kartu, .kartu-keluhan, .kartu-sewa");
@@ -350,7 +412,7 @@ function aktifkanReveal() {
   }
 }
 
-// Angka statistik di hero menghitung naik dari 0
+// Angka statistik di hero menghitung naik dari 0 (mis. 40, Rp 750.000)
 function hitungNaikHero() {
   if (!window.requestAnimationFrame || kurangiGerak()) return;
   var daftar = document.querySelectorAll(".hero-stat b");
@@ -377,7 +439,12 @@ document.addEventListener("DOMContentLoaded", function () {
   hitungNaikHero();
 
   // Ringkasan booking mengikuti isian formulir
-  var ids = ["fTanggal", "fDurasi", "selBank", "selEwallet"];
+  var durasiEl = document.getElementById("fDurasi");
+  if (durasiEl) {
+    durasiEl.addEventListener("input", function () { hitungTotal(); });
+    durasiEl.addEventListener("change", function () { setDurasi(ambilDurasi()); });  // nilai di luar batas / kosong dirapikan
+  }
+  var ids = ["fTanggal", "selBank", "selEwallet"];
   ids.forEach(function (id) {
     var el = document.getElementById(id);
     if (el) { el.addEventListener("change", perbaruiRingkasanBooking); el.addEventListener("input", perbaruiRingkasanBooking); }
