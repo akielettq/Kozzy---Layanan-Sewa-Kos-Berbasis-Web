@@ -78,13 +78,17 @@ public class DesktopKamarView extends JPanel {
         add(top, BorderLayout.NORTH);
 
         cardsPanel = new JPanel(new GridLayout(0, 5, 12, 12));
-        cardsPanel.setOpaque(false);
+        cardsPanel.setOpaque(true);
+        cardsPanel.setBackground(UITheme.BG_CANVAS);
         cardsPanel.setBorder(new EmptyBorder(2, 1, 2, 1));
         JScrollPane scroll = new JScrollPane(cardsPanel);
         scroll.setBorder(null);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        scroll.setOpaque(true);
+        scroll.setBackground(UITheme.BG_CANVAS);
+        scroll.getViewport().setOpaque(true);
+        scroll.getViewport().setBackground(UITheme.BG_CANVAS);
+        scroll.getViewport().setScrollMode(JViewport.BLIT_SCROLL_MODE);
+        scroll.getVerticalScrollBar().setUnitIncrement(24);
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
         add(scroll, BorderLayout.CENTER);

@@ -5,11 +5,15 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ImageHelper: Utilitas pemuatan gambar, caching, penskalaan halus, dan pemotongan rounded corner.
  */
 public class ImageHelper {
+
+    private static final Map<String, BufferedImage> SCALED_IMAGE_CACHE = new ConcurrentHashMap<>();
 
     public static File resolveFile(String path) {
         if (path == null || path.trim().isEmpty()) return null;
@@ -22,22 +26,22 @@ public class ImageHelper {
         String relPath = clean.startsWith("assets/") ? clean.substring(7) : clean;
 
         String[] baseDirs = {
-            System.getProperty("user.dir"),
-            new File(System.getProperty("user.dir"), "Kozzy_Desktop").getAbsolutePath(),
-            new File(System.getProperty("user.dir"), "..").getAbsolutePath()
+                System.getProperty("user.dir"),
+                new File(System.getProperty("user.dir"), "Kozzy_Desktop").getAbsolutePath(),
+                new File(System.getProperty("user.dir"), "..").getAbsolutePath()
         };
 
         String[] subPaths = {
-            clean,
-            relPath,
-            "assets/" + relPath,
-            "assets/uploads/bukti/" + filename,
-            "assets/uploads/" + filename,
-            "assets/kamar/" + filename,
-            "assets/" + filename,
-            "Kozzy_PHP/assets/uploads/bukti/" + filename,
-            "uploads/bukti/" + filename,
-            "kamar/" + filename
+                clean,
+                relPath,
+                "assets/" + relPath,
+                "assets/uploads/bukti/" + filename,
+                "assets/uploads/" + filename,
+                "assets/kamar/" + filename,
+                "assets/" + filename,
+                "Kozzy_PHP/assets/uploads/bukti/" + filename,
+                "uploads/bukti/" + filename,
+                "kamar/" + filename
         };
 
         for (String base : baseDirs) {
@@ -115,49 +119,63 @@ public class ImageHelper {
     }
 
     public static BufferedImage loadAndScale(String path, int targetWidth, int targetHeight, int cornerRadius) {
+        String cacheKey = (path != null ? path : "null") + "_" + targetWidth + "_" + targetHeight + "_" + cornerRadius;
+        BufferedImage cached = SCALED_IMAGE_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
+        BufferedImage result = null;
         try {
             File file = resolveFile(path);
             if (file != null && file.exists()) {
                 BufferedImage original = ImageIO.read(file);
                 if (original != null) {
-                    return scaleAndClip(original, targetWidth, targetHeight, cornerRadius);
+                    result = scaleAndClip(original, targetWidth, targetHeight, cornerRadius);
                 }
             }
         } catch (Exception e) {
             System.err.println("[ImageHelper] Galat memuat gambar (" + path + "): " + e.getMessage());
         }
 
-        boolean isProofOfPayment = (path == null
-                || path.toLowerCase().contains("bukti")
-                || path.toLowerCase().contains("tf")
-                || path.toLowerCase().contains("transfer")
-                || path.toLowerCase().contains("receipt")
-                || path.toLowerCase().contains("kz-")
-                || path.toLowerCase().contains("pay")
-                || targetHeight >= 200);
+        if (result == null) {
+            boolean isProofOfPayment = (path == null
+                    || path.toLowerCase().contains("bukti")
+                    || path.toLowerCase().contains("tf")
+                    || path.toLowerCase().contains("transfer")
+                    || path.toLowerCase().contains("receipt")
+                    || path.toLowerCase().contains("kz-")
+                    || path.toLowerCase().contains("pay")
+                    || targetHeight >= 200);
 
-        if (isProofOfPayment) {
-            return generateTransferReceipt(targetWidth, targetHeight, path, cornerRadius);
+            if (isProofOfPayment) {
+                result = generateTransferReceipt(targetWidth, targetHeight, path, cornerRadius);
+            } else {
+                BufferedImage placeholder = new BufferedImage(Math.max(1, targetWidth), Math.max(1, targetHeight), BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g2 = placeholder.createGraphics();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0xE8, 0xEE, 0xE9));
+                if (cornerRadius > 0) {
+                    g2.fillRoundRect(0, 0, targetWidth, targetHeight, cornerRadius, cornerRadius);
+                } else {
+                    g2.fillRect(0, 0, targetWidth, targetHeight);
+                }
+                g2.setColor(new Color(0x6A, 0x82, 0x75));
+                g2.setFont(new Font("Segoe UI", Font.BOLD, 13));
+                String text = (path != null && path.contains("/")) ? path.substring(path.lastIndexOf('/') + 1) : "Foto Kamar";
+                FontMetrics fm = g2.getFontMetrics();
+                int tx = (targetWidth - fm.stringWidth(text)) / 2;
+                int ty = (targetHeight + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(text, tx, ty);
+                g2.dispose();
+                result = placeholder;
+            }
         }
 
-        BufferedImage placeholder = new BufferedImage(Math.max(1, targetWidth), Math.max(1, targetHeight), BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = placeholder.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(new Color(0xE8, 0xEE, 0xE9));
-        if (cornerRadius > 0) {
-            g2.fillRoundRect(0, 0, targetWidth, targetHeight, cornerRadius, cornerRadius);
-        } else {
-            g2.fillRect(0, 0, targetWidth, targetHeight);
+        if (result != null) {
+            SCALED_IMAGE_CACHE.put(cacheKey, result);
         }
-        g2.setColor(new Color(0x6A, 0x82, 0x75));
-        g2.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        String text = (path != null && path.contains("/")) ? path.substring(path.lastIndexOf('/') + 1) : "Foto Kamar";
-        FontMetrics fm = g2.getFontMetrics();
-        int tx = (targetWidth - fm.stringWidth(text)) / 2;
-        int ty = (targetHeight + fm.getAscent() - fm.getDescent()) / 2;
-        g2.drawString(text, tx, ty);
-        g2.dispose();
-        return placeholder;
+        return result;
     }
 
     /**
@@ -231,11 +249,11 @@ public class ImageHelper {
 
         g2.setFont(new Font("Segoe UI", Font.PLAIN, Math.max(10, w / 36)));
         String[][] rows = {
-            {"Metode Pembayaran", "Transfer Bank BCA / QRIS"},
-            {"Rekening Tujuan", "0123-456-789 a.n Kozzy"},
-            {"Nama Pengirim", "Penyewa Terverifikasi"},
-            {"No. Referensi", "TRX-" + Math.abs((identifier != null ? identifier : "REF").hashCode() % 900000 + 100000)},
-            {"Waktu Transaksi", "09 Nov 2026, 14:22 WIB"}
+                {"Metode Pembayaran", "Transfer Bank BCA / QRIS"},
+                {"Rekening Tujuan", "0123-456-789 a.n Kozzy"},
+                {"Nama Pengirim", "Penyewa Terverifikasi"},
+                {"No. Referensi", "TRX-" + Math.abs((identifier != null ? identifier : "REF").hashCode() % 900000 + 100000)},
+                {"Waktu Transaksi", "09 Nov 2026, 14:22 WIB"}
         };
 
         for (int i = 0; i < rows.length; i++) {
