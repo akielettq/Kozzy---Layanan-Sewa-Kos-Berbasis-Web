@@ -150,7 +150,7 @@ if (empty($metodePerKategori[$kategoriAwal])) {
         if (!empty($isi)) { $kategoriAwal = $kat; break; }
     }
 }
-$durasiAwal = in_array((int)($_POST['durasi'] ?? 1), [1, 3, 6], true) ? (int)($_POST['durasi'] ?? 1) : 1;
+$durasiAwal = parseDurasi($_POST['durasi'] ?? '') ?? BOOKING_MIN_BULAN;
 
 $pesanError = '';
 
@@ -160,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pesanError = "Validasi keamanan kedaluwarsa. Silakan muat ulang halaman.";
     } else {
         $tanggalMulai = trim($_POST['tanggal_mulai'] ?? '');
-        $durasi       = (int)($_POST['durasi'] ?? 1);
+        $durasi       = parseDurasi($_POST['durasi'] ?? '');
         $idMetode     = (int)($_POST['id_metode'] ?? 0);
         $setuju       = isset($_POST['setuju']);
 
@@ -168,8 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($tanggalMulai === '' || $tanggalMulai < $hariIni) {
             $pesanError = "Pilih tanggal mulai sewa yang valid (minimal hari ini).";
-        } elseif (!in_array($durasi, [1, 3, 6])) {
-            $pesanError = "Durasi sewa harus 1, 3, atau 6 bulan.";
+        } elseif ($durasi === null) {
+            $pesanError = "Durasi sewa harus berupa bilangan bulat antara " . BOOKING_MIN_BULAN . " dan " . BOOKING_MAKS_BULAN . " bulan.";
         } elseif (!isset($metodeById[$idMetode])) {
             $pesanError = "Pilih cara pembayaran beserta bank / e-wallet tujuannya terlebih dahulu.";
         } elseif (!$setuju) {
@@ -274,11 +274,20 @@ require_once __DIR__ . '/includes/nav.php';
     <input type="date" id="fTanggal" name="tanggal_mulai" class="masukan" min="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($_POST['tanggal_mulai'] ?? date('Y-m-d')) ?>" required>
 
     <label for="fDurasi">Durasi sewa</label>
-    <select id="fDurasi" name="durasi" class="masukan" onchange="hitungTotal()" required>
-      <option value="1" <?= (($_POST['durasi'] ?? 1) == 1) ? 'selected' : '' ?>>1 bulan</option>
-      <option value="3" <?= (($_POST['durasi'] ?? 1) == 3) ? 'selected' : '' ?>>3 bulan</option>
-      <option value="6" <?= (($_POST['durasi'] ?? 1) == 6) ? 'selected' : '' ?>>6 bulan</option>
-    </select>
+    <div class="durasi-input">
+      <button type="button" class="durasi-btn" onclick="ubahDurasi(-1)" aria-label="Kurangi satu bulan">−</button>
+      <input type="number" id="fDurasi" name="durasi" class="masukan" inputmode="numeric" step="1"
+             min="<?= BOOKING_MIN_BULAN ?>" max="<?= BOOKING_MAKS_BULAN ?>" value="<?= $durasiAwal ?>" required>
+      <button type="button" class="durasi-btn" onclick="ubahDurasi(1)" aria-label="Tambah satu bulan">+</button>
+      <span class="durasi-satuan">bulan</span>
+    </div>
+    <div class="durasi-cepat" role="group" aria-label="Pilihan cepat durasi">
+      <span class="petunjuk" style="margin:0">Pilih cepat:</span>
+      <?php foreach ([1, 3, 6, 12] as $cepat): ?>
+        <button type="button" class="chip <?= $durasiAwal === $cepat ? 'aktif' : '' ?>" data-bulan="<?= $cepat ?>" onclick="setDurasi(<?= $cepat ?>)"><?= $cepat ?> bln</button>
+      <?php endforeach; ?>
+    </div>
+    <p class="petunjuk">Bebas tentukan lamanya sewa, minimal <?= BOOKING_MIN_BULAN ?> dan maksimal <?= BOOKING_MAKS_BULAN ?> bulan.</p>
 
     <div class="total-bar">
       <span>TOTAL BAYAR</span>
@@ -327,16 +336,15 @@ require_once __DIR__ . '/includes/nav.php';
         $metodeQris = $metodePerKategori['qris'][0];
         $aktifQris = ($kategoriAwal === 'qris');
     ?>
-      <!-- QRIS: gambar contoh (dummy). Ganti assets/qris_dummy.png dengan QRIS asli saat dipakai sungguhan. -->
+      <!-- QRIS -->
       <div class="panel-bayar" id="panelQris" style="<?= $aktifQris ? '' : 'display:none' ?>">
         <div class="qris-kotak">
-          <img src="assets/qris_dummy.png" alt="Kode QRIS Kos Kozzy (contoh)">
+          <img src="assets/qris.jpeg" alt="Kode QRIS Kos Kozzy (contoh)">
           <div class="qris-teks">
-            <span class="badge-dummy">QRIS DUMMY</span>
+            <span class="badge-dummy">QRIS</span>
             <p><b>Scan kode QR ini untuk membayar</b></p>
             <p class="ket"><?= htmlspecialchars($metodeQris['nomor_tujuan']) ?></p>
             <p>Nominal: <b class="nominal-bayar"><?= rupiah($kamar['harga'] * $durasiAwal) ?></b></p>
-            <p class="ket">Kode ini hanya contoh untuk demo sistem dan tidak dapat dipakai membayar sungguhan.</p>
           </div>
         </div>
         <input type="hidden" id="inQris" name="id_metode" value="<?= (int)$metodeQris['id_metode'] ?>" <?= $aktifQris ? '' : 'disabled' ?>>
@@ -375,7 +383,7 @@ require_once __DIR__ . '/includes/nav.php';
       <dl class="rb-baris">
         <div><dt>Harga</dt><dd><?= rupiah($kamar['harga']) ?> /bulan</dd></div>
         <div><dt>Mulai</dt><dd id="rbMulai"><?= formatTanggal($tglAwal) ?></dd></div>
-        <div><dt>Durasi</dt><dd id="rbDurasi"><?= $durasiAwal ?> bulan</dd></div>
+        <div><dt>Durasi</dt><dd id="rbDurasi"><?= labelDurasiBulan($durasiAwal) ?></dd></div>
         <div><dt>Sampai</dt><dd id="rbSampai"><?= formatTanggal(tambahBulan($tglAwal, $durasiAwal)) ?></dd></div>
         <div><dt>Pembayaran</dt><dd id="rbMetode">Belum dipilih</dd></div>
       </dl>
@@ -388,6 +396,18 @@ require_once __DIR__ . '/includes/nav.php';
 <script>
 // Sinkronkan tampilan pembayaran dengan pilihan awal (penting saat form dimuat ulang setelah error)
 document.addEventListener('DOMContentLoaded', function () {
+  // Peringatan jika script.js tertinggal versi dari halaman ini (mis. hanya sebagian file yang ditimpa)
+  if (typeof ubahDurasi !== 'function' || typeof setDurasi !== 'function') {
+    var formBooking = document.querySelector('#blokBooking form');
+    if (formBooking) {
+      var info = document.createElement('div');
+      info.className = 'pesan gagal';
+      info.setAttribute('role', 'alert');
+      info.innerHTML = '<b>Berkas script.js belum versi terbaru.</b> Tombol durasi dan ringkasan belum akan berfungsi. ' +
+                       'Timpa <code>script.js</code> dengan versi terbaru, lalu muat ulang dengan <b>Ctrl+F5</b>.';
+      formBooking.parentNode.insertBefore(info, formBooking);
+    }
+  }
   var radio = document.querySelector('input[name="kategori_bayar"]:checked');
   pilihKategoriBayar(radio ? radio.value : 'bank');
   var pasangan = [['selBank', 'detailBank'], ['selEwallet', 'detailEwallet']];

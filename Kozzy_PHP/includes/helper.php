@@ -696,3 +696,34 @@ function tagFasilitas(?string $daftar): array {
     }
     return array_keys($tag);
 }
+
+
+// =====================================================================
+// DURASI SEWA (bebas, dalam bulan)
+// =====================================================================
+
+const BOOKING_MIN_BULAN = 1;
+const BOOKING_MAKS_BULAN = 24;   // ubah di sini jika ingin batas sewa yang lebih panjang
+
+/**
+ * Membaca durasi sewa dari input pengguna. Hanya bilangan bulat tanpa tanda/pecahan
+ * dalam rentang BOOKING_MIN_BULAN..BOOKING_MAKS_BULAN yang diterima; selain itu null.
+ */
+function parseDurasi($mentah): ?int {
+    $s = trim((string)$mentah);
+    if (!preg_match('/^\d{1,3}$/', $s)) {
+        return null;
+    }
+    $n = (int)$s;
+    return ($n >= BOOKING_MIN_BULAN && $n <= BOOKING_MAKS_BULAN) ? $n : null;
+}
+
+/**
+ * Label durasi yang enak dibaca: "3 bulan", "12 bulan (1 tahun)", "18 bulan (1 tahun 6 bln)"
+ */
+function labelDurasiBulan(int $n): string {
+    if ($n < 12) return "$n bulan";
+    $tahun = intdiv($n, 12);
+    $sisa  = $n % 12;
+    return "$n bulan ($tahun tahun" . ($sisa > 0 ? " $sisa bln" : "") . ")";
+}

@@ -461,11 +461,11 @@ a {
     padding: 3px 8px; }
 
 .tipe-putra { 
-    background: var(--hijau); 
-    color: var(--kertas); }
+    background: #1D5FA8; 
+    color: #fff; }
 
 .tipe-putri { 
-    background: var(--tera); 
+    background: #8B2F86; 
     color: #fff; }
 
 .lencana { 
@@ -1843,3 +1843,96 @@ h1 em, h2 em {
 @media (max-width: 620px) {
   .stepper small { display: none; }
 }
+
+
+/* =========================================================
+   v6 — Durasi sewa bebas, modal aman untuk isi tinggi, tombol tutup
+   ========================================================= */
+
+/* ---------- durasi sewa: angka + tombol - / + + pilihan cepat ---------- */
+.durasi-input {
+    display: flex;
+    align-items: center;
+    gap: 8px; }
+
+.durasi-input .masukan {
+    width: 92px;
+    text-align: center;
+    font-weight: 700;
+    -moz-appearance: textfield; }
+
+.durasi-input .masukan::-webkit-outer-spin-button,
+.durasi-input .masukan::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0; }
+
+.durasi-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--tinta);
+    background: var(--kartu);
+    border: 1.5px solid var(--tinta);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .1s; }
+
+.durasi-btn:hover {
+    box-shadow: 3px 3px 0 var(--tinta);
+    transform: translate(-1px, -1px); }
+
+.durasi-btn:active {
+    box-shadow: none;
+    transform: translate(1px, 1px); }
+
+.durasi-satuan {
+    font-size: 14px;
+    color: var(--redup); }
+
+.durasi-cepat {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px; }
+
+.durasi-cepat .chip {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 4px 13px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer; }
+
+/* ---------- modal: tengah jika muat, bisa di-scroll dari atas jika lebih tinggi dari layar ----------
+   (pemusatan flex biasa memotong bagian atas kotak, termasuk tombol tutup, tanpa bisa di-scroll) */
+.modal.tampil {
+    align-items: flex-start; }
+
+.modal-kotak {
+    margin: auto; }
+
+/* ---------- tombol tutup (×): glyph di tengah, tidak terpotong, ada umpan balik saat ditekan ---------- */
+.tutup {
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--tinta);
+    cursor: pointer;
+    transition: transform .15s, background .15s; }
+
+.tutup:hover {
+    background: var(--tera);
+    color: #fff; }
+
+.tutup:active {
+    transform: rotate(90deg) scale(.9); }
+
+.tutup:focus-visible {
+    outline: 2px solid var(--hijau);
+    outline-offset: 2px; }
