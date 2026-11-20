@@ -660,7 +660,7 @@ public class DesktopBerandaView extends JPanel {
     }
 
     /**
-     * Memperbarui data ringkasan ketersediaan kamar dari Controller.
+     * Memperbarui data ringkasan ketersediaan kamar dari Controller
      */
     public void refreshData() {
         BerandaSummary summary = controller.getSummary();
